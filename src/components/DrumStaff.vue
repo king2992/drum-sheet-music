@@ -251,21 +251,21 @@ function getBeatX(beat: number): number {
 function handleStaffClick(event: MouseEvent) {
   const svg = event.currentTarget as SVGSVGElement
   const rect = svg.getBoundingClientRect()
-  
+
   // SVG 좌표계로 변환 (transform translate 고려)
   const svgPoint = svg.createSVGPoint()
   svgPoint.x = event.clientX - rect.left
   svgPoint.y = event.clientY - rect.top
-  
+
   // transform translate(20, 30 + STAFF_PADDING) 고려
   const x = svgPoint.x - 20
   const y = svgPoint.y - (30 + STAFF_PADDING)
-  
+
   // 보표 영역 내인지 확인 (위아래 여유 공간 포함)
   if (x < 0 || x > STAFF_WIDTH || y < -STAFF_PADDING || y > STAFF_HEIGHT + STAFF_PADDING) {
     return
   }
-  
+
   // 가장 가까운 비트 찾기 (소수점 포함)
   const { beats } = props.measure.timeSignature
   const beatWidth = STAFF_WIDTH / beats
@@ -273,16 +273,23 @@ function handleStaffClick(event: MouseEvent) {
   const exactBeat = x / beatWidth
   // 16분음표 단위로 반올림 (0, 0.25, 0.5, 0.75, 1, ..., 3.75까지 가능)
   const beat = Math.max(0, Math.min(beats - 0.25, Math.round(exactBeat * 4) / 4))
-  
+
+  // 다이나믹 또는 헤어핀이 선택되었으면 해당 작업 수행
+  if (store.selectedDynamicType) {
+    // 다이나믹 마크 추가
+    store.addDynamicMark(props.measure.id, beat, store.selectedDynamicType)
+    return
+  }
+
   // 클릭 위치를 보표 중심 기준 상대 위치로 변환
   // y는 보표 시작점 기준이므로, 보표 중심 기준으로 변환
   const centerY = STAFF_HEIGHT / 2
   const relativeY = y - centerY
-  
+
   let closestPart: DrumPart | null = null
   let minDistance = Infinity
   const threshold = LINE_SPACING * 0.6 // 허용 거리
-  
+
   // 모든 드럼 파트 중에서 클릭 위치와 가장 가까운 파트 찾기
   Object.entries(partPositions).forEach(([part, pos]) => {
     const distance = Math.abs(relativeY - pos)
@@ -291,12 +298,12 @@ function handleStaffClick(event: MouseEvent) {
       closestPart = part as DrumPart
     }
   })
-  
+
   // 선택된 드럼 파트가 있으면 해당 파트 위치와 가까운지 확인
   if (store.selectedDrumPart !== null) {
     const selectedPartPosition = partPositions[store.selectedDrumPart]
     const distance = Math.abs(relativeY - selectedPartPosition)
-    
+
     // 선택된 드럼 파트 위치와 가까운지 확인
     if (distance <= threshold) {
       // 선택된 드럼 파트 위치 근처를 클릭했으면 해당 파트로 추가
@@ -497,6 +504,68 @@ function handleRestClick(beat: number) {
         />
       </g>
       
+      <!-- 다이나믹 마크 렌더링 -->
+      <g v-if="measure.dynamics" class="dynamics">
+        <text
+          v-for="dynamic in measure.dynamics"
+          :key="dynamic.id"
+          :x="getBeatX(dynamic.beat)"
+          :y="STAFF_HEIGHT + 30"
+          text-anchor="middle"
+          font-family="Georgia, serif"
+          font-style="italic"
+          font-weight="bold"
+          font-size="18"
+          fill="#333"
+        >
+          {{ dynamic.type }}
+        </text>
+      </g>
+
+      <!-- 헤어핀 렌더링 (크레센도/디크레센도) -->
+      <g v-if="measure.hairpins" class="hairpins">
+        <g v-for="hairpin in measure.hairpins" :key="hairpin.id">
+          <!-- 크레센도: < (점점 넓어짐) -->
+          <g v-if="hairpin.type === 'crescendo'">
+            <line
+              :x1="getBeatX(hairpin.startBeat)"
+              :y1="STAFF_HEIGHT + 20"
+              :x2="getBeatX(hairpin.endBeat)"
+              :y2="STAFF_HEIGHT + 15"
+              stroke="#333"
+              stroke-width="2"
+            />
+            <line
+              :x1="getBeatX(hairpin.startBeat)"
+              :y1="STAFF_HEIGHT + 20"
+              :x2="getBeatX(hairpin.endBeat)"
+              :y2="STAFF_HEIGHT + 25"
+              stroke="#333"
+              stroke-width="2"
+            />
+          </g>
+          <!-- 디크레센도: > (점점 좁아짐) -->
+          <g v-else-if="hairpin.type === 'decrescendo'">
+            <line
+              :x1="getBeatX(hairpin.startBeat)"
+              :y1="STAFF_HEIGHT + 15"
+              :x2="getBeatX(hairpin.endBeat)"
+              :y2="STAFF_HEIGHT + 20"
+              stroke="#333"
+              stroke-width="2"
+            />
+            <line
+              :x1="getBeatX(hairpin.startBeat)"
+              :y1="STAFF_HEIGHT + 25"
+              :x2="getBeatX(hairpin.endBeat)"
+              :y2="STAFF_HEIGHT + 20"
+              stroke="#333"
+              stroke-width="2"
+            />
+          </g>
+        </g>
+      </g>
+
       <!-- 반복 시작 기호 (얇은선 | 굵은선 || 점 점) -->
       <g v-if="measure.hasRepeatStart">
         <!-- 얇은 막대선 -->

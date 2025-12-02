@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import type { DrumSheet, Measure, DrumNote, NoteValue, Section, SectionType, Rest, RestValue } from '@/types/drum'
-import { DrumPart, NoteStyle } from '@/types/drum'
+import type { DrumSheet, Measure, DrumNote, NoteValue, Section, SectionType, Rest, RestValue, DynamicMark, Hairpin } from '@/types/drum'
+import { DrumPart, NoteStyle, DynamicType, HairpinType } from '@/types/drum'
 import { v4 as uuidv4 } from 'uuid'
 
 export const useDrumSheetStore = defineStore('drumSheet', () => {
@@ -25,6 +25,8 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
   const selectedDrumPart = ref<DrumPart | null>(null) // 선택된 드럼 파트 (null이면 클릭 위치 자동 선택)
   const isGhostNoteMode = ref<boolean>(false) // Ghost Note 모드
   const isAccentMode = ref<boolean>(false) // Accent 모드
+  const selectedDynamicType = ref<DynamicType | null>(null) // 선택된 다이나믹 타입
+  const selectedHairpinType = ref<HairpinType | null>(null) // 선택된 헤어핀 타입 (크레센도/디크레센도)
 
   // Undo/Redo 히스토리 관리
   const history = ref<DrumSheet[]>([])
@@ -274,6 +276,86 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     isAccentMode.value = !isAccentMode.value
   }
 
+  // 다이나믹 마크 추가
+  function addDynamicMark(measureId: string, beat: number, type: DynamicType) {
+    const measure = drumSheet.value.measures.find((m) => m.id === measureId)
+    if (!measure) return
+
+    if (!measure.dynamics) {
+      measure.dynamics = []
+    }
+
+    // 같은 위치에 이미 다이나믹이 있으면 삭제
+    const existingIndex = measure.dynamics.findIndex((d) => Math.abs(d.beat - beat) < 0.01)
+    if (existingIndex !== -1) {
+      measure.dynamics.splice(existingIndex, 1)
+    }
+
+    // 새 다이나믹 추가
+    measure.dynamics.push({
+      id: uuidv4(),
+      beat,
+      type,
+    })
+
+    saveHistory()
+  }
+
+  // 다이나믹 마크 삭제
+  function removeDynamicMark(measureId: string, dynamicId: string) {
+    const measure = drumSheet.value.measures.find((m) => m.id === measureId)
+    if (!measure || !measure.dynamics) return
+
+    measure.dynamics = measure.dynamics.filter((d) => d.id !== dynamicId)
+    saveHistory()
+  }
+
+  // 헤어핀 추가 (크레센도/디크레센도)
+  function addHairpin(measureId: string, startBeat: number, endBeat: number, type: HairpinType) {
+    const measure = drumSheet.value.measures.find((m) => m.id === measureId)
+    if (!measure) return
+
+    if (!measure.hairpins) {
+      measure.hairpins = []
+    }
+
+    measure.hairpins.push({
+      id: uuidv4(),
+      startBeat,
+      endBeat,
+      type,
+    })
+
+    saveHistory()
+  }
+
+  // 헤어핀 삭제
+  function removeHairpin(measureId: string, hairpinId: string) {
+    const measure = drumSheet.value.measures.find((m) => m.id === measureId)
+    if (!measure || !measure.hairpins) return
+
+    measure.hairpins = measure.hairpins.filter((h) => h.id !== hairpinId)
+    saveHistory()
+  }
+
+  // 선택된 다이나믹 타입 설정
+  function setSelectedDynamicType(type: DynamicType | null) {
+    selectedDynamicType.value = type
+    // 다이나믹 선택 시 헤어핀 선택 해제
+    if (type !== null) {
+      selectedHairpinType.value = null
+    }
+  }
+
+  // 선택된 헤어핀 타입 설정
+  function setSelectedHairpinType(type: HairpinType | null) {
+    selectedHairpinType.value = type
+    // 헤어핀 선택 시 다이나믹 선택 해제
+    if (type !== null) {
+      selectedDynamicType.value = null
+    }
+  }
+
   // 악보 저장 (JSON 다운로드)
   function saveToFile() {
     const dataStr = JSON.stringify(drumSheet.value, null, 2)
@@ -345,6 +427,8 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     selectedDrumPart,
     isGhostNoteMode,
     isAccentMode,
+    selectedDynamicType,
+    selectedHairpinType,
     measureSections,
     canUndo,
     canRedo,
@@ -365,6 +449,12 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     setSelectedDrumPart,
     toggleGhostNoteMode,
     toggleAccentMode,
+    addDynamicMark,
+    removeDynamicMark,
+    addHairpin,
+    removeHairpin,
+    setSelectedDynamicType,
+    setSelectedHairpinType,
     saveToFile,
     loadFromFile,
     newSheet,

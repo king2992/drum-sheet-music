@@ -3,7 +3,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useDrumSheetStore } from '@/stores/drumSheet'
 import DrumMeasure from './DrumMeasure.vue'
 import type { DrumPart } from '@/types/drum'
-import { NoteValue, RestValue, SectionType, DrumPart as DrumPartEnum } from '@/types/drum'
+import { NoteValue, RestValue, SectionType, DrumPart as DrumPartEnum, DynamicType, HairpinType } from '@/types/drum'
 
 const store = useDrumSheetStore()
 
@@ -165,6 +165,22 @@ const drumParts = [
   { part: DrumPartEnum.LOW_TOM, label: '플로어탐', shortLabel: 'FT', icon: '🎵' },
   { part: DrumPartEnum.SNARE, label: '스네어', shortLabel: 'SD', icon: '🥁' },
   { part: DrumPartEnum.BASS, label: '베이스', shortLabel: 'BD', icon: '🎸' },
+]
+
+// 다이나믹 타입 목록
+const dynamicTypes = [
+  { type: DynamicType.PP, label: 'pp (매우 여리게)' },
+  { type: DynamicType.P, label: 'p (여리게)' },
+  { type: DynamicType.MP, label: 'mp (조금 여리게)' },
+  { type: DynamicType.MF, label: 'mf (조금 세게)' },
+  { type: DynamicType.F, label: 'f (세게)' },
+  { type: DynamicType.FF, label: 'ff (매우 세게)' },
+]
+
+// 헤어핀 타입 목록
+const hairpinTypes = [
+  { type: HairpinType.CRESCENDO, label: '크레센도 (<)', symbol: '<' },
+  { type: HairpinType.DECRESCENDO, label: '디크레센도 (>)', symbol: '>' },
 ]
 
 // 마디별 섹션 정보 계산
@@ -348,6 +364,44 @@ function toggleMeasureSelection(measureId: string) {
             ▶ Accent {{ store.isAccentMode ? 'ON' : 'OFF' }}
           </button>
         </div>
+      </div>
+
+      <!-- 다이나믹 표시 -->
+      <div class="dynamics-section">
+        <label class="dynamics-label">다이나믹 표시:</label>
+        <div class="dynamics-buttons">
+          <button
+            v-for="dt in dynamicTypes"
+            :key="dt.type"
+            @click="store.setSelectedDynamicType(store.selectedDynamicType === dt.type ? null : dt.type)"
+            :class="['dynamics-btn', { active: store.selectedDynamicType === dt.type }]"
+            :title="dt.label"
+          >
+            {{ dt.type }}
+          </button>
+        </div>
+        <div class="hairpin-buttons">
+          <button
+            v-for="ht in hairpinTypes"
+            :key="ht.type"
+            @click="store.setSelectedHairpinType(store.selectedHairpinType === ht.type ? null : ht.type)"
+            :class="['hairpin-btn', { active: store.selectedHairpinType === ht.type }]"
+            :title="ht.label"
+          >
+            {{ ht.symbol }} {{ ht.type === HairpinType.CRESCENDO ? '크레센도' : '디크레센도' }}
+          </button>
+        </div>
+        <p class="dynamics-hint">
+          <span v-if="store.selectedDynamicType">
+            선택됨: {{ dynamicTypes.find(dt => dt.type === store.selectedDynamicType)?.label }}
+          </span>
+          <span v-else-if="store.selectedHairpinType">
+            선택됨: {{ hairpinTypes.find(ht => ht.type === store.selectedHairpinType)?.label }}
+          </span>
+          <span v-else>
+            다이나믹 또는 헤어핀을 선택한 후 보표를 클릭하세요
+          </span>
+        </p>
       </div>
     </div>
 
@@ -816,6 +870,94 @@ function toggleMeasureSelection(measureId: string) {
 .btn-accent.active {
   background: #d84315;
   box-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
+}
+
+/* 다이나믹 표시 스타일 */
+.dynamics-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: #fff3e0;
+  border-radius: 8px;
+  border: 1px solid #ffb74d;
+}
+
+.dynamics-label {
+  display: block;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.dynamics-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dynamics-btn {
+  padding: 8px 16px;
+  border: 2px solid #ff9800;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 700;
+  color: #666;
+  font-family: 'Georgia', serif;
+  font-style: italic;
+}
+
+.dynamics-btn:hover {
+  border-color: #f57c00;
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.dynamics-btn.active {
+  border-color: #ff9800;
+  background: #ff9800;
+  color: white;
+}
+
+.hairpin-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hairpin-btn {
+  padding: 8px 16px;
+  border: 2px solid #ff9800;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
+.hairpin-btn:hover {
+  border-color: #f57c00;
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.hairpin-btn.active {
+  border-color: #ff9800;
+  background: #ff9800;
+  color: white;
+}
+
+.dynamics-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
 }
 
 .sheet-container {
