@@ -23,15 +23,15 @@ const isHiHat = computed(() => props.note.part === DrumPart.HI_HAT)
 const stemLength = computed(() => {
   switch (props.note.value) {
     case NoteValue.SIXTEENTH:
-      return 35
+      return 40
     case NoteValue.EIGHTH:
-      return 30
+      return 35
     case NoteValue.QUARTER:
-      return 25
+      return 30
     case NoteValue.HALF:
-      return 20
+      return 30
     default:
-      return 15
+      return 25
   }
 })
 
@@ -152,11 +152,203 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
           stroke-dasharray="2,2"
         />
       </g>
+
+      <!-- 심벌용 스템과 깃발 -->
+      <!-- 2분음표: 스템만 -->
+      <line
+        v-if="props.note.value === NoteValue.HALF"
+        x1="0"
+        :y1="cymbalSize + 2"
+        x2="0"
+        :y2="cymbalSize + 2 + stemLength"
+        stroke="#000"
+        stroke-width="2"
+      />
+
+      <!-- 4분음표: 스템만 -->
+      <line
+        v-else-if="props.note.value === NoteValue.QUARTER"
+        x1="0"
+        :y1="cymbalSize + 2"
+        x2="0"
+        :y2="cymbalSize + 2 + stemLength"
+        stroke="#000"
+        stroke-width="2"
+      />
+
+      <!-- 8분음표: 스템 + 깃발 1개 -->
+      <g v-else-if="props.note.value === NoteValue.EIGHTH">
+        <line
+          x1="0"
+          :y1="cymbalSize + 2"
+          x2="0"
+          :y2="cymbalSize + 2 + stemLength"
+          stroke="#000"
+          stroke-width="2"
+        />
+        <path
+          :d="`M 0,${cymbalSize + 2 + stemLength} Q 10,${cymbalSize + 2 + stemLength - 5} 8,${cymbalSize + 2 + stemLength - 12}`"
+          fill="none"
+          stroke="#000"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </g>
+
+      <!-- 16분음표: 스템 + 깃발 2개 -->
+      <g v-else-if="props.note.value === NoteValue.SIXTEENTH">
+        <line
+          x1="0"
+          :y1="cymbalSize + 2"
+          x2="0"
+          :y2="cymbalSize + 2 + stemLength"
+          stroke="#000"
+          stroke-width="2"
+        />
+        <!-- 깃발 1 -->
+        <path
+          :d="`M 0,${cymbalSize + 2 + stemLength} Q 10,${cymbalSize + 2 + stemLength - 5} 8,${cymbalSize + 2 + stemLength - 12}`"
+          fill="none"
+          stroke="#000"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+        <!-- 깃발 2 -->
+        <path
+          :d="`M 0,${cymbalSize + 2 + stemLength - 6} Q 10,${cymbalSize + 2 + stemLength - 11} 8,${cymbalSize + 2 + stemLength - 18}`"
+          fill="none"
+          stroke="#000"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </g>
     </g>
     
     <!-- 드럼 (원형) -->
     <g v-else>
+      <!-- 온음표: 속이 빈 타원 -->
+      <ellipse
+        v-if="props.note.value === NoteValue.WHOLE"
+        cx="0"
+        cy="0"
+        rx="9"
+        ry="7"
+        fill="none"
+        stroke="#000"
+        stroke-width="2"
+      />
+
+      <!-- 2분음표: 속이 빈 원 + 스템 -->
+      <g v-else-if="props.note.value === NoteValue.HALF">
+        <circle
+          cx="0"
+          cy="0"
+          :r="noteSize"
+          fill="none"
+          stroke="#000"
+          stroke-width="2"
+        />
+        <!-- 스템 -->
+        <line
+          :x1="noteSize"
+          y1="0"
+          :x2="noteSize"
+          :y2="-stemLength"
+          stroke="#000"
+          stroke-width="2"
+        />
+      </g>
+
+      <!-- 4분음표: 꽉 찬 원 + 스템 -->
+      <g v-else-if="props.note.value === NoteValue.QUARTER">
+        <circle
+          cx="0"
+          cy="0"
+          :r="noteSize"
+          fill="#000"
+          stroke="#000"
+          stroke-width="1"
+        />
+        <!-- 스템 -->
+        <line
+          :x1="noteSize"
+          y1="0"
+          :x2="noteSize"
+          :y2="-stemLength"
+          stroke="#000"
+          stroke-width="2"
+        />
+      </g>
+
+      <!-- 8분음표: 꽉 찬 원 + 스템 + 깃발 1개 -->
+      <g v-else-if="props.note.value === NoteValue.EIGHTH">
+        <circle
+          cx="0"
+          cy="0"
+          :r="noteSize"
+          fill="#000"
+          stroke="#000"
+          stroke-width="1"
+        />
+        <!-- 스템 -->
+        <line
+          :x1="noteSize"
+          y1="0"
+          :x2="noteSize"
+          :y2="-stemLength"
+          stroke="#000"
+          stroke-width="2"
+        />
+        <!-- 깃발 -->
+        <path
+          :d="`M ${noteSize},-${stemLength} Q ${noteSize + 10},-${stemLength - 5} ${noteSize + 8},-${stemLength - 12}`"
+          fill="none"
+          stroke="#000"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </g>
+
+      <!-- 16분음표: 꽉 찬 원 + 스템 + 깃발 2개 -->
+      <g v-else-if="props.note.value === NoteValue.SIXTEENTH">
+        <circle
+          cx="0"
+          cy="0"
+          :r="noteSize"
+          fill="#000"
+          stroke="#000"
+          stroke-width="1"
+        />
+        <!-- 스템 -->
+        <line
+          :x1="noteSize"
+          y1="0"
+          :x2="noteSize"
+          :y2="-stemLength"
+          stroke="#000"
+          stroke-width="2"
+        />
+        <!-- 깃발 1 -->
+        <path
+          :d="`M ${noteSize},-${stemLength} Q ${noteSize + 10},-${stemLength - 5} ${noteSize + 8},-${stemLength - 12}`"
+          fill="none"
+          stroke="#000"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+        <!-- 깃발 2 -->
+        <path
+          :d="`M ${noteSize},-${stemLength - 6} Q ${noteSize + 10},-${stemLength - 11} ${noteSize + 8},-${stemLength - 18}`"
+          fill="none"
+          stroke="#000"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </g>
+
+      <!-- 기본값 (값이 없으면 그냥 원) -->
       <circle
+        v-else
         cx="0"
         cy="0"
         :r="noteSize"
@@ -164,46 +356,6 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
         stroke="#000"
         stroke-width="1"
       />
-    </g>
-    
-    <!-- 스템 (8분음표, 16분음표일 때) -->
-    <g v-if="props.note.value === NoteValue.EIGHTH || props.note.value === NoteValue.SIXTEENTH">
-      <line
-        :x1="noteSize"
-        y1="0"
-        :x2="noteSize"
-        :y2="stemLength"
-        stroke="#000"
-        stroke-width="1.5"
-      />
-      
-      <!-- 깃발 (8분음표) -->
-      <path
-        v-if="props.note.value === NoteValue.EIGHTH"
-        :d="`M ${noteSize},${stemLength} Q ${noteSize + 8},${stemLength - 5} ${noteSize + 6},${stemLength - 10}`"
-        fill="none"
-        stroke="#000"
-        stroke-width="1.5"
-        stroke-linecap="round"
-      />
-      
-      <!-- 깃발 (16분음표) -->
-      <g v-if="props.note.value === NoteValue.SIXTEENTH">
-        <path
-          :d="`M ${noteSize},${stemLength} Q ${noteSize + 8},${stemLength - 5} ${noteSize + 6},${stemLength - 10}`"
-          fill="none"
-          stroke="#000"
-          stroke-width="1.5"
-          stroke-linecap="round"
-        />
-        <path
-          :d="`M ${noteSize},${stemLength - 8} Q ${noteSize + 8},${stemLength - 13} ${noteSize + 6},${stemLength - 18}`"
-          fill="none"
-          stroke="#000"
-          stroke-width="1.5"
-          stroke-linecap="round"
-        />
-      </g>
     </g>
   </g>
 </template>

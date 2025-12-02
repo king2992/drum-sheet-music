@@ -1,11 +1,33 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useDrumSheetStore } from '@/stores/drumSheet'
 import DrumMeasure from './DrumMeasure.vue'
 import type { DrumPart } from '@/types/drum'
 import { NoteValue, RestValue, SectionType, DrumPart as DrumPartEnum } from '@/types/drum'
 
 const store = useDrumSheetStore()
+
+// 키보드 단축키 핸들러
+function handleKeyDown(event: KeyboardEvent) {
+  // Ctrl+Z: Undo
+  if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
+    event.preventDefault()
+    store.undo()
+  }
+  // Ctrl+Y 또는 Ctrl+Shift+Z: Redo
+  if ((event.ctrlKey && event.key === 'y') || (event.ctrlKey && event.shiftKey && event.key === 'z')) {
+    event.preventDefault()
+    store.redo()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 
 const handleToggleNote = (measureId: string, part: DrumPart, beat: number) => {
   store.toggleNote(measureId, part, beat)
@@ -222,12 +244,32 @@ function toggleMeasureSelection(measureId: string) {
 
     <!-- 툴바 -->
     <div class="toolbar">
-      <button @click="store.addMeasure()" class="btn btn-primary">
-        ➕ 마디 추가
-      </button>
-      <button @click="openSectionDialog" class="btn btn-secondary">
-        📑 섹션 추가
-      </button>
+      <div class="toolbar-left">
+        <button @click="store.addMeasure()" class="btn btn-primary">
+          ➕ 마디 추가
+        </button>
+        <button @click="openSectionDialog" class="btn btn-secondary">
+          📑 섹션 추가
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <button
+          @click="store.undo()"
+          :disabled="!store.canUndo"
+          class="btn btn-undo"
+          title="실행 취소 (Ctrl+Z)"
+        >
+          ↶ 실행 취소
+        </button>
+        <button
+          @click="store.redo()"
+          :disabled="!store.canRedo"
+          class="btn btn-redo"
+          title="다시 실행 (Ctrl+Y)"
+        >
+          ↷ 다시 실행
+        </button>
+      </div>
     </div>
 
     <!-- 악보 영역 -->
@@ -242,6 +284,7 @@ function toggleMeasureSelection(measureId: string) {
           :width="240"
           @toggle-note="(part, beat) => handleToggleNote(measure.id, part, beat)"
           @toggle-rest="(beat) => handleToggleRest(measure.id, beat)"
+          @clear-measure="() => store.clearMeasure(measure.id)"
           @toggle-repeat-start="handleToggleRepeatStart(measure.id)"
           @toggle-repeat-end="handleToggleRepeatEnd(measure.id)"
           @remove-measure="() => store.removeMeasure(measure.id)"
@@ -299,6 +342,8 @@ function toggleMeasureSelection(measureId: string) {
         <li><strong>음표 추가:</strong> 드럼 파트를 선택한 후 5선 보표를 클릭하여 음표를 추가하거나 삭제할 수 있습니다</li>
         <li><strong>쉼표 추가:</strong> 마디 컨트롤의 쉼표 버튼(𝄽)을 활성화한 후 보표를 클릭하세요</li>
         <li><strong>음표 길이:</strong> 상단의 "음표 길이" 드롭다운에서 원하는 음표 길이(4분음표, 8분음표 등)를 선택하세요</li>
+        <li><strong>마디 초기화:</strong> 마디 컨트롤의 🗑️ 버튼으로 해당 마디의 모든 음표를 삭제할 수 있습니다</li>
+        <li><strong>실행 취소/다시 실행:</strong> ↶ 버튼 또는 Ctrl+Z로 실행 취소, ↷ 버튼 또는 Ctrl+Y로 다시 실행할 수 있습니다 (최대 50단계)</li>
         <li><strong>섹션:</strong> "섹션 추가" 버튼으로 Intro, Verse, Chorus 등의 섹션을 만들 수 있습니다</li>
         <li><strong>반복 기호:</strong> 마디 컨트롤의 ⟲(시작) 또는 ⟳(끝) 버튼을 사용하세요</li>
         <li><strong>마디 추가/삭제:</strong> 툴바의 "마디 추가" 버튼과 각 마디의 × 버튼을 사용하세요</li>
@@ -481,6 +526,14 @@ function toggleMeasureSelection(measureId: string) {
 .toolbar {
   margin-bottom: 24px;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar-left,
+.toolbar-right {
+  display: flex;
   gap: 12px;
 }
 
@@ -510,6 +563,25 @@ function toggleMeasureSelection(measureId: string) {
 
 .btn-secondary:hover {
   background: #555;
+}
+
+.btn-undo,
+.btn-redo {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-undo:hover:not(:disabled),
+.btn-redo:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.btn-undo:disabled,
+.btn-redo:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .sheet-container {

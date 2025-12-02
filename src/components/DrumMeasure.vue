@@ -15,6 +15,7 @@ const emit = defineEmits<{
   toggleNote: [part: DrumPart, beat: number]
   toggleRest: [beat: number]
   removeMeasure: []
+  clearMeasure: []
   toggleRepeatStart: []
   toggleRepeatEnd: []
 }>()
@@ -89,6 +90,13 @@ function handleRestClick(beat: number) {
           title="쉼표 모드"
         >
           𝄽
+        </button>
+        <button
+          @click="emit('clearMeasure')"
+          class="control-btn clear-btn"
+          title="마디 초기화"
+        >
+          🗑️
         </button>
         <button
           @click="emit('removeMeasure')"
@@ -187,6 +195,17 @@ function handleRestClick(beat: number) {
   background: #1976d2;
   color: white;
   border-color: #1976d2;
+}
+
+.clear-btn {
+  background: #ff9800;
+  color: white;
+  border-color: #ff9800;
+}
+
+.clear-btn:hover {
+  background: #f57c00;
+  border-color: #f57c00;
 }
 
 .remove-btn {

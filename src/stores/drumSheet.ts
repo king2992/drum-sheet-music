@@ -24,6 +24,58 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
   const selectedRestValue = ref<RestValue>(0.25) // 기본값: 4분 쉼표
   const selectedDrumPart = ref<DrumPart | null>(null) // 선택된 드럼 파트 (null이면 클릭 위치 자동 선택)
 
+  // Undo/Redo 히스토리 관리
+  const history = ref<DrumSheet[]>([])
+  const historyIndex = ref<number>(-1)
+  const maxHistorySize = 50 // 최대 히스토리 개수
+
+  // 초기 상태를 히스토리에 저장
+  function initHistory() {
+    history.value = [JSON.parse(JSON.stringify(drumSheet.value))]
+    historyIndex.value = 0
+  }
+
+  // 히스토리 저장 (deep copy) - 변경 후에 호출해야 함
+  function saveHistory() {
+    // 현재 인덱스 이후의 히스토리 삭제 (새로운 작업 시)
+    if (historyIndex.value < history.value.length - 1) {
+      history.value = history.value.slice(0, historyIndex.value + 1)
+    }
+
+    // 변경된 상태를 deep copy하여 저장
+    history.value.push(JSON.parse(JSON.stringify(drumSheet.value)))
+    historyIndex.value++
+
+    // 최대 개수 초과 시 오래된 히스토리 제거
+    if (history.value.length > maxHistorySize) {
+      history.value.shift()
+      historyIndex.value--
+    }
+  }
+
+  // 스토어 초기화 시 초기 히스토리 저장
+  initHistory()
+
+  // Undo
+  function undo() {
+    if (historyIndex.value > 0) {
+      historyIndex.value--
+      drumSheet.value = JSON.parse(JSON.stringify(history.value[historyIndex.value]))
+    }
+  }
+
+  // Redo
+  function redo() {
+    if (historyIndex.value < history.value.length - 1) {
+      historyIndex.value++
+      drumSheet.value = JSON.parse(JSON.stringify(history.value[historyIndex.value]))
+    }
+  }
+
+  // Undo/Redo 가능 여부
+  const canUndo = computed(() => historyIndex.value > 0)
+  const canRedo = computed(() => historyIndex.value < history.value.length - 1)
+
   // 드럼 파트에 따른 기본 음표 스타일 결정
   function getNoteStyle(part: DrumPart): NoteStyle {
     switch (part) {
@@ -68,6 +120,17 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
         (s) => s.measureIds.length > 0
       )
       drumSheet.value.measures = drumSheet.value.measures.filter((m) => m.id !== measureId)
+      saveHistory() // 변경 후에 저장
+    }
+  }
+
+  // 마디 초기화 (모든 음표와 쉼표 삭제)
+  function clearMeasure(measureId: string) {
+    const measure = drumSheet.value.measures.find((m) => m.id === measureId)
+    if (measure) {
+      measure.notes = []
+      measure.rests = []
+      saveHistory() // 변경 후에 저장
     }
   }
 
@@ -95,6 +158,8 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
         style: getNoteStyle(part),
       })
     }
+
+    saveHistory() // 변경 후에 저장
   }
 
   // 쉼표 추가/토글
@@ -113,6 +178,8 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
         value: selectedRestValue.value,
       })
     }
+
+    saveHistory() // 변경 후에 저장
   }
 
   // 섹션 추가
@@ -131,6 +198,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
         measure.sectionId = section.id
       }
     })
+    saveHistory() // 변경 후에 저장
   }
 
   // 섹션 삭제
@@ -142,6 +210,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
         m.sectionId = undefined
       }
     })
+    saveHistory() // 변경 후에 저장
   }
 
   // 반복 기호 설정
@@ -149,6 +218,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     const measure = drumSheet.value.measures.find((m) => m.id === measureId)
     if (measure) {
       measure.hasRepeatStart = value
+      saveHistory() // 변경 후에 저장
     }
   }
 
@@ -156,6 +226,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     const measure = drumSheet.value.measures.find((m) => m.id === measureId)
     if (measure) {
       measure.hasRepeatEnd = value
+      saveHistory() // 변경 후에 저장
     }
   }
 
@@ -206,8 +277,11 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     selectedRestValue,
     selectedDrumPart,
     measureSections,
+    canUndo,
+    canRedo,
     addMeasure,
     removeMeasure,
+    clearMeasure,
     toggleNote,
     toggleRest,
     addSection,
@@ -220,5 +294,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     setSelectedNoteValue,
     setSelectedRestValue,
     setSelectedDrumPart,
+    undo,
+    redo,
   }
 })
