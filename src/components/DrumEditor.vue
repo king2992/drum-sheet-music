@@ -520,17 +520,33 @@ function toggleMeasureSelection(measureId: string) {
 
     <!-- 사용 방법 -->
     <div class="instructions">
-      <h3>사용 방법</h3>
+      <h3>📖 기본 사용법</h3>
       <ul>
-        <li><strong>드럼 파트 선택:</strong> 상단의 드럼 파트 버튼(크래시, 라이드, 하이햇, 탐, 스네어, 베이스 등)을 클릭하여 원하는 드럼을 선택하세요. 선택한 드럼으로 음표가 추가됩니다. "자동" 모드에서는 클릭 위치에 따라 자동으로 드럼이 선택됩니다.</li>
+        <li><strong>드럼 파트 선택:</strong> 상단의 드럼 파트 버튼(크래시, 라이드, 하이햇, 탐, 스네어, 베이스 등)을 클릭하여 원하는 드럼을 선택하세요. "자동" 모드에서는 클릭 위치에 따라 자동으로 드럼이 선택됩니다.</li>
         <li><strong>음표 추가:</strong> 드럼 파트를 선택한 후 5선 보표를 클릭하여 음표를 추가하거나 삭제할 수 있습니다</li>
+        <li><strong>음표 길이:</strong> 상단의 "음표 길이" 드롭다운에서 원하는 음표 길이(온음표, 2분음표, 4분음표, 8분음표, 16분음표)를 선택하세요</li>
         <li><strong>쉼표 추가:</strong> 마디 컨트롤의 쉼표 버튼(𝄽)을 활성화한 후 보표를 클릭하세요</li>
-        <li><strong>음표 길이:</strong> 상단의 "음표 길이" 드롭다운에서 원하는 음표 길이(4분음표, 8분음표 등)를 선택하세요</li>
+        <li><strong>마디 관리:</strong> 툴바의 "➕ 마디 추가" 버튼으로 새 마디를 추가하고, 각 마디의 × 버튼으로 삭제할 수 있습니다</li>
         <li><strong>마디 초기화:</strong> 마디 컨트롤의 🗑️ 버튼으로 해당 마디의 모든 음표를 삭제할 수 있습니다</li>
-        <li><strong>실행 취소/다시 실행:</strong> ↶ 버튼 또는 Ctrl+Z로 실행 취소, ↷ 버튼 또는 Ctrl+Y로 다시 실행할 수 있습니다 (최대 50단계)</li>
-        <li><strong>섹션:</strong> "섹션 추가" 버튼으로 Intro, Verse, Chorus 등의 섹션을 만들 수 있습니다</li>
-        <li><strong>반복 기호:</strong> 마디 컨트롤의 ⟲(시작) 또는 ⟳(끝) 버튼을 사용하세요</li>
-        <li><strong>마디 추가/삭제:</strong> 툴바의 "마디 추가" 버튼과 각 마디의 × 버튼을 사용하세요</li>
+      </ul>
+
+      <h3>🎵 고급 기능</h3>
+      <ul>
+        <li><strong>Ghost Note (유령 음표):</strong> 👻 버튼을 활성화하면 괄호로 둘러싸인 작은 음표가 추가됩니다 (약하게 연주)</li>
+        <li><strong>Accent (강세):</strong> ▶ 버튼을 활성화하면 > 기호가 표시된 강한 음표가 추가됩니다</li>
+        <li><strong>다이나믹 표시:</strong> pp, p, mp, mf, f, ff 버튼을 선택한 후 보표를 클릭하여 음량 표시를 추가할 수 있습니다</li>
+        <li><strong>음표 연결선 (Beam):</strong> 연속된 8분음표나 16분음표는 자동으로 연결선(빔)으로 표시됩니다</li>
+        <li><strong>섹션 구분:</strong> "📑 섹션 추가" 버튼으로 Intro, Verse, Chorus, Bridge 등의 섹션을 만들어 악보를 구조화할 수 있습니다</li>
+        <li><strong>반복 기호:</strong> 마디 컨트롤의 ⟲(반복 시작) 또는 ⟳(반복 끝) 버튼으로 전문적인 반복 기호를 추가할 수 있습니다</li>
+      </ul>
+
+      <h3>💾 파일 관리</h3>
+      <ul>
+        <li><strong>악보 저장:</strong> 💾 저장 버튼 또는 Ctrl+S로 JSON 파일로 저장할 수 있습니다</li>
+        <li><strong>악보 불러오기:</strong> 📂 열기 버튼 또는 Ctrl+O로 저장된 악보를 불러올 수 있습니다</li>
+        <li><strong>새 악보:</strong> 📄 새 악보 버튼 또는 Ctrl+N으로 새로운 악보를 시작할 수 있습니다</li>
+        <li><strong>악보 인쇄:</strong> 🖨️ 인쇄 버튼으로 인쇄 최적화된 악보를 출력할 수 있습니다</li>
+        <li><strong>실행 취소/다시 실행:</strong> ↶/↷ 버튼 또는 Ctrl+Z/Ctrl+Y (최대 50단계)</li>
       </ul>
 
       <h3>⌨️ 키보드 단축키</h3>
@@ -542,7 +558,15 @@ function toggleMeasureSelection(measureId: string) {
         <li><kbd>Ctrl</kbd> + <kbd>Y</kbd> : 다시 실행</li>
         <li><kbd>G</kbd> : Ghost Note 모드 토글</li>
         <li><kbd>A</kbd> : Accent 모드 토글</li>
-        <li><kbd>1</kbd> ~ <kbd>5</kbd> : 음표 길이 선택 (1:온음표, 2:2분음표, 3:4분음표, 4:8분음표, 5:16분음표)</li>
+        <li><kbd>1</kbd> ~ <kbd>5</kbd> : 음표 길이 선택</li>
+      </ul>
+
+      <h3>💡 팁</h3>
+      <ul>
+        <li>8분음표와 16분음표는 연속으로 배치하면 자동으로 빔(연결선)으로 표시됩니다</li>
+        <li>마디 번호는 자동으로 표시되며 줄바꿈도 자동으로 처리됩니다</li>
+        <li>다이나믹 표시는 Georgia 세리프 이탤릭체로 전문적으로 렌더링됩니다</li>
+        <li>모든 변경사항은 실행 취소 히스토리에 저장되어 안전하게 작업할 수 있습니다</li>
       </ul>
     </div>
   </div>
