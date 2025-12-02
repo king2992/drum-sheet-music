@@ -497,54 +497,75 @@ function handleRestClick(beat: number) {
         />
       </g>
       
-      <!-- 반복 기호 -->
+      <!-- 반복 시작 기호 (얇은선 | 굵은선 || 점 점) -->
       <g v-if="measure.hasRepeatStart">
+        <!-- 얇은 막대선 -->
         <line
-          :x1="0"
+          :x1="2"
           :y1="0"
-          :x2="0"
+          :x2="2"
           :y2="STAFF_HEIGHT"
           stroke="#000"
-          stroke-width="3"
+          stroke-width="1.5"
         />
+        <!-- 굵은 막대선 -->
+        <line
+          :x1="6"
+          :y1="0"
+          :x2="6"
+          :y2="STAFF_HEIGHT"
+          stroke="#000"
+          stroke-width="4"
+        />
+        <!-- 위쪽 점 (2번째 공간: 20-40 사이, y=30) -->
         <circle
-          :cx="0"
-          :cy="STAFF_HEIGHT / 2"
-          r="4"
+          :cx="12"
+          :cy="30"
+          r="3"
           fill="#000"
         />
+        <!-- 아래쪽 점 (4번째 공간: 60-80 사이, y=70) -->
         <circle
-          :cx="0"
-          :cy="STAFF_HEIGHT / 2"
-          r="6"
-          fill="none"
-          stroke="#000"
-          stroke-width="1"
+          :cx="12"
+          :cy="50"
+          r="3"
+          fill="#000"
         />
       </g>
-      
+
+      <!-- 반복 끝 기호 (점 점 || 굵은선 | 얇은선) -->
       <g v-if="measure.hasRepeatEnd">
-        <line
-          :x1="STAFF_WIDTH"
-          :y1="0"
-          :x2="STAFF_WIDTH"
-          :y2="STAFF_HEIGHT"
-          stroke="#000"
-          stroke-width="3"
-        />
+        <!-- 위쪽 점 (2번째 공간) -->
         <circle
-          :cx="STAFF_WIDTH"
-          :cy="STAFF_HEIGHT / 2"
-          r="4"
+          :cx="STAFF_WIDTH - 12"
+          :cy="30"
+          r="3"
           fill="#000"
         />
+        <!-- 아래쪽 점 (4번째 공간) -->
         <circle
-          :cx="STAFF_WIDTH"
-          :cy="STAFF_HEIGHT / 2"
-          r="6"
-          fill="none"
+          :cx="STAFF_WIDTH - 12"
+          :cy="50"
+          r="3"
+          fill="#000"
+        />
+        <!-- 굵은 막대선 -->
+        <line
+          :x1="STAFF_WIDTH - 6"
+          :y1="0"
+          :x2="STAFF_WIDTH - 6"
+          :y2="STAFF_HEIGHT"
           stroke="#000"
-          stroke-width="1"
+          stroke-width="4"
+        />
+        <!-- 얇은 막대선 (마디 끝선과 겹침) -->
+        <line
+          :x1="STAFF_WIDTH - 2"
+          :y1="0"
+          :x2="STAFF_WIDTH - 2"
+          :y2="STAFF_HEIGHT"
+          stroke="#000"
+          stroke-width="1.5"
         />
       </g>
     </g>
