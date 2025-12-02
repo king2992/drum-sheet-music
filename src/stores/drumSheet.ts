@@ -274,6 +274,59 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     isAccentMode.value = !isAccentMode.value
   }
 
+  // 악보 저장 (JSON 다운로드)
+  function saveToFile() {
+    const dataStr = JSON.stringify(drumSheet.value, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${drumSheet.value.title.replace(/\s+/g, '_')}_drum_sheet.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  // 악보 불러오기 (JSON 파일)
+  function loadFromFile(file: File): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string
+          const loadedSheet = JSON.parse(content)
+          drumSheet.value = loadedSheet
+          initHistory() // 히스토리 초기화
+          resolve()
+        } catch (error) {
+          reject(error)
+        }
+      }
+      reader.onerror = () => reject(reader.error)
+      reader.readAsText(file)
+    })
+  }
+
+  // 새 악보 시작
+  function newSheet() {
+    drumSheet.value = {
+      id: uuidv4(),
+      title: '새 드럼 악보',
+      tempo: 120,
+      measures: [
+        {
+          id: uuidv4(),
+          timeSignature: { beats: 4, noteValue: 4 },
+          notes: [],
+          rests: [],
+        },
+      ],
+      sections: [],
+    }
+    initHistory()
+  }
+
   // 마디별 섹션 정보 가져오기
   const measureSections = computed(() => {
     const map = new Map<string, Section>()
@@ -312,6 +365,9 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     setSelectedDrumPart,
     toggleGhostNoteMode,
     toggleAccentMode,
+    saveToFile,
+    loadFromFile,
+    newSheet,
     undo,
     redo,
   }

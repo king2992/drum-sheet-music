@@ -19,6 +19,49 @@ function handleKeyDown(event: KeyboardEvent) {
     event.preventDefault()
     store.redo()
   }
+  // Ctrl+S: 저장
+  if (event.ctrlKey && event.key === 's') {
+    event.preventDefault()
+    store.saveToFile()
+  }
+  // Ctrl+O: 열기
+  if (event.ctrlKey && event.key === 'o') {
+    event.preventDefault()
+    triggerFileInput()
+  }
+  // Ctrl+N: 새 악보
+  if (event.ctrlKey && event.key === 'n') {
+    event.preventDefault()
+    handleNewSheet()
+  }
+  // G: Ghost Note 모드 토글
+  if (event.key === 'g' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+      event.preventDefault()
+      store.toggleGhostNoteMode()
+    }
+  }
+  // A: Accent 모드 토글
+  if (event.key === 'a' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+      event.preventDefault()
+      store.toggleAccentMode()
+    }
+  }
+  // 숫자 키 (1-5): 음표 길이 선택
+  if (['1', '2', '3', '4', '5'].includes(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+      event.preventDefault()
+      const noteValueMap: Record<string, NoteValue> = {
+        '1': NoteValue.WHOLE,
+        '2': NoteValue.HALF,
+        '3': NoteValue.QUARTER,
+        '4': NoteValue.EIGHTH,
+        '5': NoteValue.SIXTEENTH,
+      }
+      store.setSelectedNoteValue(noteValueMap[event.key])
+    }
+  }
 }
 
 onMounted(() => {
@@ -48,6 +91,37 @@ const handleToggleRepeatEnd = (measureId: string) => {
   const measure = store.drumSheet.measures.find((m) => m.id === measureId)
   if (measure) {
     store.setRepeatEnd(measureId, !measure.hasRepeatEnd)
+  }
+}
+
+// 파일 업로드 핸들러
+const fileInput = ref<HTMLInputElement | null>(null)
+
+function handleLoadFile(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    store.loadFromFile(file)
+      .then(() => {
+        alert('악보를 불러왔습니다!')
+      })
+      .catch((error) => {
+        alert('파일을 읽는 중 오류가 발생했습니다: ' + error.message)
+      })
+  }
+  // 같은 파일을 다시 선택할 수 있도록 value 초기화
+  if (target) {
+    target.value = ''
+  }
+}
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+function handleNewSheet() {
+  if (confirm('새 악보를 시작하시겠습니까? 저장하지 않은 내용은 사라집니다.')) {
+    store.newSheet()
   }
 }
 
@@ -276,6 +350,23 @@ function toggleMeasureSelection(measureId: string) {
     <!-- 툴바 -->
     <div class="toolbar">
       <div class="toolbar-left">
+        <button @click="handleNewSheet" class="btn btn-file" title="새 악보">
+          📄 새 악보
+        </button>
+        <button @click="triggerFileInput" class="btn btn-file" title="악보 불러오기">
+          📂 열기
+        </button>
+        <button @click="store.saveToFile()" class="btn btn-file" title="악보 저장">
+          💾 저장
+        </button>
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".json"
+          @change="handleLoadFile"
+          style="display: none"
+        />
+        <div class="toolbar-divider"></div>
         <button @click="store.addMeasure()" class="btn btn-primary">
           ➕ 마디 추가
         </button>
@@ -379,6 +470,18 @@ function toggleMeasureSelection(measureId: string) {
         <li><strong>섹션:</strong> "섹션 추가" 버튼으로 Intro, Verse, Chorus 등의 섹션을 만들 수 있습니다</li>
         <li><strong>반복 기호:</strong> 마디 컨트롤의 ⟲(시작) 또는 ⟳(끝) 버튼을 사용하세요</li>
         <li><strong>마디 추가/삭제:</strong> 툴바의 "마디 추가" 버튼과 각 마디의 × 버튼을 사용하세요</li>
+      </ul>
+
+      <h3>⌨️ 키보드 단축키</h3>
+      <ul class="shortcuts">
+        <li><kbd>Ctrl</kbd> + <kbd>S</kbd> : 악보 저장</li>
+        <li><kbd>Ctrl</kbd> + <kbd>O</kbd> : 악보 열기</li>
+        <li><kbd>Ctrl</kbd> + <kbd>N</kbd> : 새 악보</li>
+        <li><kbd>Ctrl</kbd> + <kbd>Z</kbd> : 실행 취소</li>
+        <li><kbd>Ctrl</kbd> + <kbd>Y</kbd> : 다시 실행</li>
+        <li><kbd>G</kbd> : Ghost Note 모드 토글</li>
+        <li><kbd>A</kbd> : Accent 모드 토글</li>
+        <li><kbd>1</kbd> ~ <kbd>5</kbd> : 음표 길이 선택 (1:온음표, 2:2분음표, 3:4분음표, 4:8분음표, 5:16분음표)</li>
       </ul>
     </div>
   </div>
@@ -638,6 +741,22 @@ function toggleMeasureSelection(measureId: string) {
   background: #555;
 }
 
+.btn-file {
+  background: #2196f3;
+  color: white;
+}
+
+.btn-file:hover {
+  background: #1976d2;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 36px;
+  background: #ddd;
+  margin: 0 8px;
+}
+
 .btn-undo,
 .btn-redo {
   background: #4caf50;
@@ -803,7 +922,12 @@ function toggleMeasureSelection(measureId: string) {
 
 .instructions h3 {
   margin-top: 0;
+  margin-bottom: 16px;
   color: #1976d2;
+}
+
+.instructions h3:not(:first-child) {
+  margin-top: 32px;
 }
 
 .instructions ul {
@@ -815,5 +939,36 @@ function toggleMeasureSelection(measureId: string) {
   margin-bottom: 8px;
   color: #555;
   line-height: 1.6;
+}
+
+.shortcuts {
+  list-style: none;
+  padding-left: 0 !important;
+}
+
+.shortcuts li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  border: 1px solid #ddd;
+}
+
+kbd {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #333;
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
+  min-width: 28px;
+  text-align: center;
 }
 </style>
