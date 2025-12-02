@@ -284,13 +284,14 @@ function toggleMeasureSelection(measureId: string) {
 
     <!-- 악보 영역 -->
     <div class="sheet-container">
-      <div class="measures">
+      <div class="measures-grid">
         <DrumMeasure
           v-for="({ measure, section, isFirstInSection }, index) in measureWithSections"
           :key="measure.id"
           :measure="measure"
           :section="section"
           :is-first-in-section="isFirstInSection"
+          :measure-number="index + 1"
           :width="240"
           @toggle-note="(part, beat) => handleToggleNote(measure.id, part, beat)"
           @toggle-rest="(beat) => handleToggleRest(measure.id, beat)"
@@ -622,10 +623,11 @@ function toggleMeasureSelection(measureId: string) {
   margin-bottom: 24px;
 }
 
-.measures {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+.measures-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 16px;
+  align-items: start;
 }
 
 .dialog-overlay {

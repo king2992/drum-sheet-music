@@ -9,6 +9,7 @@ const props = defineProps<{
   section?: Section
   isFirstInSection?: boolean
   width?: number
+  measureNumber?: number
 }>()
 
 const emit = defineEmits<{
@@ -47,12 +48,15 @@ function handleRestClick(beat: number) {
 
 <template>
   <div class="drum-measure">
+    <!-- 마디 번호 -->
+    <div v-if="measureNumber" class="measure-number">{{ measureNumber }}</div>
+
     <div class="measure-container">
       <!-- 섹션 레이블 (첫 번째 마디일 때만) -->
       <div v-if="isFirstInSection && section" class="section-label-wrapper">
         <div class="section-label-text">{{ section.label }}</div>
       </div>
-      
+
       <!-- 박자표 -->
       <div class="time-signature-wrapper">
         <span class="time-signature">{{ timeSignatureText }}</span>
@@ -112,12 +116,26 @@ function handleRestClick(beat: number) {
 
 <style scoped>
 .drum-measure {
+  position: relative;
   display: flex;
-  margin-bottom: 24px;
-  background: white;
+  background: #f9f9f9;
   border-radius: 4px;
   padding: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e0e0;
+}
+
+.measure-number {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #999;
+  background: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #ddd;
 }
 
 .measure-container {
@@ -130,19 +148,22 @@ function handleRestClick(beat: number) {
 .section-label-wrapper {
   display: flex;
   align-items: center;
-  min-width: 60px;
-  padding-right: 8px;
+  min-width: 70px;
+  padding-right: 12px;
 }
 
 .section-label-text {
   writing-mode: vertical-rl;
   text-orientation: mixed;
   transform: rotate(180deg);
-  font-weight: bold;
-  font-size: 12px;
-  color: #333;
+  font-weight: 900;
+  font-size: 14px;
+  color: #1976d2;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  padding: 8px 4px;
+  background: linear-gradient(to right, #e3f2fd, transparent);
+  border-left: 4px solid #1976d2;
 }
 
 .time-signature-wrapper {
