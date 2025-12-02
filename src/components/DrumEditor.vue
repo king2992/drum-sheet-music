@@ -125,6 +125,10 @@ function handleNewSheet() {
   }
 }
 
+function handlePrint() {
+  window.print()
+}
+
 const noteValues = [
   { value: NoteValue.WHOLE, label: '온음표 (1)', symbol: '𝅝' },
   { value: NoteValue.HALF, label: '2분음표 (1/2)', symbol: '𝅗𝅥' },
@@ -358,6 +362,9 @@ function toggleMeasureSelection(measureId: string) {
         </button>
         <button @click="store.saveToFile()" class="btn btn-file" title="악보 저장">
           💾 저장
+        </button>
+        <button @click="handlePrint" class="btn btn-file" title="악보 인쇄">
+          🖨️ 인쇄
         </button>
         <input
           ref="fileInput"
@@ -970,5 +977,56 @@ kbd {
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
   min-width: 28px;
   text-align: center;
+}
+
+/* 인쇄 스타일 */
+@media print {
+  /* 배경색 제거 */
+  .drum-editor {
+    background: white !important;
+    padding: 0 !important;
+  }
+
+  /* 컨트롤 요소들 숨기기 */
+  .controls-section,
+  .toolbar,
+  .instructions,
+  .control-btn,
+  .measure-controls,
+  .btn {
+    display: none !important;
+  }
+
+  /* 악보 제목은 보이게 */
+  .sheet-title-section {
+    margin-bottom: 16px !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* 악보 컨테이너 최적화 */
+  .sheet-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 마디 스타일 최적화 */
+  .drum-measure {
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-inside: avoid;
+  }
+
+  /* 섹션 레이블 보이게 */
+  .section-label-wrapper {
+    display: flex !important;
+  }
+
+  /* 마디 번호 보이게 */
+  .measure-number {
+    display: block !important;
+  }
 }
 </style>
