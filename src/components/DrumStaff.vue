@@ -112,85 +112,94 @@ const notesByBeat = computed(() => {
   return grouped
 })
 
-// 연속된 비트의 같은 파트 음표들을 빔 그룹으로 찾기
-function getBeamGroupsForPart(part: DrumPart, noteValue: NoteValue): Array<{ notes: DrumNote[], startBeat: number, endBeat: number }> {
+// 연속된 비트의 음표들을 빔 그룹으로 찾기 (파트 관계없이)
+function getBeamGroupsByNoteValue(noteValue: NoteValue): Array<{ notes: DrumNote[], startBeat: number, endBeat: number }> {
+  // 해당 음표 길이의 모든 음표를 비트별로 그룹화
   const allNotes = props.measure.notes
-    .filter(n => n.part === part && n.value === noteValue && needsBeam(n.value))
+    .filter(n => n.value === noteValue && needsBeam(n.value))
     .sort((a, b) => a.beat - b.beat)
-  
+
   if (allNotes.length === 0) return []
-  
+
+  // 비트별로 음표들을 그룹화
+  const beatGroups = new Map<string, DrumNote[]>()
+  allNotes.forEach(note => {
+    const beatKey = note.beat.toFixed(2)
+    if (!beatGroups.has(beatKey)) {
+      beatGroups.set(beatKey, [])
+    }
+    beatGroups.get(beatKey)!.push(note)
+  })
+
+  // 연속된 비트들을 찾아서 빔 그룹으로 만들기
+  const sortedBeats = Array.from(beatGroups.keys()).map(k => parseFloat(k)).sort((a, b) => a - b)
   const groups: Array<{ notes: DrumNote[], startBeat: number, endBeat: number }> = []
-  const firstNote = allNotes[0]
-  if (!firstNote) return []
-  
-  let currentGroup: DrumNote[] = [firstNote]
-  
-  for (let i = 1; i < allNotes.length; i++) {
-    const prevNote = allNotes[i - 1]
-    const currNote = allNotes[i]
-    if (!prevNote || !currNote) continue
-    
-    const prevBeat = prevNote.beat
-    const currBeat = currNote.beat
+
+  if (sortedBeats.length === 0) return []
+
+  let currentGroupBeats: number[] = [sortedBeats[0]]
+
+  for (let i = 1; i < sortedBeats.length; i++) {
+    const prevBeat = sortedBeats[i - 1]
+    const currBeat = sortedBeats[i]
     const beatDiff = currBeat - prevBeat
-    
+
     // 연속된 비트인지 확인 (8분음표는 0.5, 16분음표는 0.25 간격)
     const expectedDiff = noteValue === NoteValue.EIGHTH ? 0.5 : 0.25
-    
+
     if (Math.abs(beatDiff - expectedDiff) < 0.01) {
       // 연속된 비트면 같은 그룹에 추가
-      currentGroup.push(currNote)
+      currentGroupBeats.push(currBeat)
     } else {
-      // 연속되지 않으면 새 그룹 시작
-      if (currentGroup.length > 1) {
-        const startNote = currentGroup[0]
-        const endNote = currentGroup[currentGroup.length - 1]
-        if (startNote && endNote) {
+      // 연속되지 않으면 현재 그룹 저장하고 새 그룹 시작
+      if (currentGroupBeats.length >= 1) {
+        const groupNotes: DrumNote[] = []
+        currentGroupBeats.forEach(beat => {
+          const beatKey = beat.toFixed(2)
+          const notesAtBeat = beatGroups.get(beatKey)
+          if (notesAtBeat) {
+            groupNotes.push(...notesAtBeat)
+          }
+        })
+
+        if (groupNotes.length > 0) {
           groups.push({
-            notes: currentGroup,
-            startBeat: startNote.beat,
-            endBeat: endNote.beat
+            notes: groupNotes,
+            startBeat: currentGroupBeats[0],
+            endBeat: currentGroupBeats[currentGroupBeats.length - 1]
           })
         }
       }
-      currentGroup = [currNote]
+      currentGroupBeats = [currBeat]
     }
   }
-  
+
   // 마지막 그룹 추가
-  if (currentGroup.length > 1) {
-    const startNote = currentGroup[0]
-    const endNote = currentGroup[currentGroup.length - 1]
-    if (startNote && endNote) {
+  if (currentGroupBeats.length >= 1) {
+    const groupNotes: DrumNote[] = []
+    currentGroupBeats.forEach(beat => {
+      const beatKey = beat.toFixed(2)
+      const notesAtBeat = beatGroups.get(beatKey)
+      if (notesAtBeat) {
+        groupNotes.push(...notesAtBeat)
+      }
+    })
+
+    if (groupNotes.length > 0) {
       groups.push({
-        notes: currentGroup,
-        startBeat: startNote.beat,
-        endBeat: endNote.beat
+        notes: groupNotes,
+        startBeat: currentGroupBeats[0],
+        endBeat: currentGroupBeats[currentGroupBeats.length - 1]
       })
     }
   }
-  
+
   return groups
 }
 
 // 빔이 필요한 음표 길이인지 확인
 function needsBeam(noteValue: NoteValue): boolean {
   return noteValue === NoteValue.EIGHTH || noteValue === NoteValue.SIXTEENTH
-}
-
-// 같은 비트에 있는 음표들 중 빔으로 연결할 그룹 찾기
-function getBeamGroups(notes: DrumNote[]): Map<NoteValue, DrumNote[]> {
-  const groups = new Map<NoteValue, DrumNote[]>()
-  notes.forEach((note) => {
-    if (needsBeam(note.value)) {
-      if (!groups.has(note.value)) {
-        groups.set(note.value, [])
-      }
-      groups.get(note.value)!.push(note)
-    }
-  })
-  return groups
 }
 
 // 각 음표의 스템 끝 Y 위치 계산
@@ -367,25 +376,35 @@ function handleRestClick(beat: number) {
         stroke-dasharray="2,2"
       />
       
-      <!-- 빔 렌더링: 연속된 비트의 같은 파트 음표들을 빔으로 연결 -->
-      <template v-for="part in partOrder" :key="part">
-        <template v-for="noteValue in [NoteValue.EIGHTH, NoteValue.SIXTEENTH]" :key="noteValue">
-          <template v-for="group in getBeamGroupsForPart(part, noteValue)" :key="`${part}-${noteValue}-${group.startBeat}`">
-            <g>
-              <!-- 각 음표의 스템 끝에서 빔까지 연결선 -->
+      <!-- 빔 렌더링: 연속된 비트의 모든 음표들을 빔으로 연결 -->
+      <template v-for="noteValue in [NoteValue.EIGHTH, NoteValue.SIXTEENTH]" :key="noteValue">
+        <template v-for="(group, groupIndex) in getBeamGroupsByNoteValue(noteValue)" :key="`${noteValue}-${groupIndex}`">
+          <g>
+            <!-- 각 음표의 스템 끝에서 빔까지 연결선 -->
+            <line
+              v-for="note in group.notes"
+              :key="`beam-connector-${note.id}`"
+              :x1="getBeatX(note.beat)"
+              :y1="getStemEndY(note)"
+              :x2="getBeatX(note.beat)"
+              :y2="getBeamY(group.notes)"
+              stroke="#000"
+              stroke-width="2"
+            />
+            <!-- 8분음표: 하나의 빔 -->
+            <line
+              v-if="noteValue === NoteValue.EIGHTH"
+              :x1="getBeatX(group.startBeat)"
+              :y1="getBeamY(group.notes)"
+              :x2="getBeatX(group.endBeat)"
+              :y2="getBeamY(group.notes)"
+              stroke="#000"
+              stroke-width="3"
+              stroke-linecap="round"
+            />
+            <!-- 16분음표: 두 개의 빔 -->
+            <g v-else-if="noteValue === NoteValue.SIXTEENTH">
               <line
-                v-for="note in group.notes"
-                :key="`beam-connector-${note.id}`"
-                :x1="getBeatX(note.beat)"
-                :y1="getStemEndY(note)"
-                :x2="getBeatX(note.beat)"
-                :y2="getBeamY(group.notes)"
-                stroke="#000"
-                stroke-width="2"
-              />
-              <!-- 8분음표: 하나의 빔 -->
-              <line
-                v-if="noteValue === NoteValue.EIGHTH"
                 :x1="getBeatX(group.startBeat)"
                 :y1="getBeamY(group.notes)"
                 :x2="getBeatX(group.endBeat)"
@@ -394,73 +413,11 @@ function handleRestClick(beat: number) {
                 stroke-width="3"
                 stroke-linecap="round"
               />
-              <!-- 16분음표: 두 개의 빔 -->
-              <g v-else-if="noteValue === NoteValue.SIXTEENTH">
-                <line
-                  :x1="getBeatX(group.startBeat)"
-                  :y1="getBeamY(group.notes)"
-                  :x2="getBeatX(group.endBeat)"
-                  :y2="getBeamY(group.notes)"
-                  stroke="#000"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                />
-                <line
-                  :x1="getBeatX(group.startBeat)"
-                  :y1="getBeamY(group.notes) - 6"
-                  :x2="getBeatX(group.endBeat)"
-                  :y2="getBeamY(group.notes) - 6"
-                  stroke="#000"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                />
-              </g>
-            </g>
-          </template>
-        </template>
-      </template>
-      
-      <!-- 같은 비트에 있는 여러 파트 음표들을 빔으로 연결 -->
-      <g v-for="[beatKey, notes] in notesByBeat" :key="`same-beat-${beatKey}`">
-        <template v-for="[noteValue, beamNotes] in getBeamGroups(notes)" :key="`same-beat-${noteValue}`">
-          <g v-if="beamNotes && beamNotes.length > 1">
-            <!-- 각 음표의 스템 끝에서 빔까지 연결선 -->
-            <line
-              v-for="note in beamNotes"
-              :key="`same-beat-connector-${note.id}`"
-              :x1="getBeatX(note.beat)"
-              :y1="getStemEndY(note)"
-              :x2="getBeatX(note.beat)"
-              :y2="getBeamY(beamNotes)"
-              stroke="#000"
-              stroke-width="2"
-            />
-            <!-- 같은 비트의 빔 수평선 -->
-            <line
-              v-if="noteValue === NoteValue.EIGHTH"
-              :x1="getBeatX(beamNotes[0]!.beat) - 2"
-              :y1="getBeamY(beamNotes)"
-              :x2="getBeatX(beamNotes[0]!.beat) + 2"
-              :y2="getBeamY(beamNotes)"
-              stroke="#000"
-              stroke-width="3"
-              stroke-linecap="round"
-            />
-            <g v-else-if="noteValue === NoteValue.SIXTEENTH">
               <line
-                :x1="getBeatX(beamNotes[0]!.beat) - 2"
-                :y1="getBeamY(beamNotes)"
-                :x2="getBeatX(beamNotes[0]!.beat) + 2"
-                :y2="getBeamY(beamNotes)"
-                stroke="#000"
-                stroke-width="3"
-                stroke-linecap="round"
-              />
-              <line
-                :x1="getBeatX(beamNotes[0]!.beat) - 2"
-                :y1="getBeamY(beamNotes) - 6"
-                :x2="getBeatX(beamNotes[0]!.beat) + 2"
-                :y2="getBeamY(beamNotes) - 6"
+                :x1="getBeatX(group.startBeat)"
+                :y1="getBeamY(group.notes) - 6"
+                :x2="getBeatX(group.endBeat)"
+                :y2="getBeamY(group.notes) - 6"
                 stroke="#000"
                 stroke-width="3"
                 stroke-linecap="round"
@@ -468,7 +425,7 @@ function handleRestClick(beat: number) {
             </g>
           </g>
         </template>
-      </g>
+      </template>
       
       <!-- 개별 음표 렌더링 -->
       <g v-for="[beatKey, notes] in notesByBeat" :key="beatKey">
@@ -487,7 +444,7 @@ function handleRestClick(beat: number) {
             :note="note"
             :x="getBeatX(note.beat)"
             :y="partPositions[note.part] + STAFF_HEIGHT / 2"
-            :has-beam="needsBeam(note.value) && (getBeamGroupsForPart(note.part, note.value).some(g => g.notes.includes(note)) || notes.filter(n => n.value === note.value && needsBeam(n.value)).length > 1)"
+            :has-beam="needsBeam(note.value) && getBeamGroupsByNoteValue(note.value).some(g => g.notes.some(n => n.id === note.id))"
           />
         </g>
       </g>
