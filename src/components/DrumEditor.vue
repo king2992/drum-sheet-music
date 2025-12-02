@@ -138,14 +138,24 @@ function toggleMeasureSelection(measureId: string) {
     <!-- 헤더 -->
     <div class="editor-header">
       <div class="title-section">
-        <h1>드럼 악보 에디터</h1>
-        <div class="sheet-title-display">
-          <h2 class="main-title">{{ store.drumSheet.title }}</h2>
-          <p v-if="store.drumSheet.artist" class="artist-name">{{ store.drumSheet.artist }}</p>
-          <p class="tempo-display">J = {{ store.drumSheet.tempo }}</p>
-        </div>
+        <h1 class="editor-title">드럼 악보 에디터</h1>
       </div>
+    </div>
 
+    <!-- 악보 제목 영역 (크고 명확하게) -->
+    <div class="sheet-title-section">
+      <div class="sheet-title-display">
+        <h2 class="main-title">{{ store.drumSheet.title }}</h2>
+        <p v-if="store.drumSheet.artist" class="artist-name">{{ store.drumSheet.artist }}</p>
+      </div>
+      <div class="tempo-display-large">
+        <span class="tempo-label">♩ =</span>
+        <span class="tempo-value">{{ store.drumSheet.tempo }}</span>
+      </div>
+    </div>
+
+    <!-- 컨트롤 영역 -->
+    <div class="controls-section">
       <div class="controls">
         <div class="control-group">
           <label>제목:</label>
@@ -408,27 +418,68 @@ function toggleMeasureSelection(measureId: string) {
   border-radius: 4px;
 }
 
+.editor-title {
+  font-size: 20px;
+  margin: 0;
+  color: #555;
+}
+
+.sheet-title-section {
+  background: white;
+  padding: 32px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 6px solid #1976d2;
+}
+
+.sheet-title-display {
+  flex: 1;
+}
+
 .main-title {
-  font-size: 32px;
-  font-weight: bold;
-  margin: 0 0 8px 0;
-  color: #333;
+  font-size: 48px;
+  font-weight: 900;
+  margin: 0 0 12px 0;
+  color: #222;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
 }
 
 .artist-name {
-  font-size: 18px;
-  margin: 0 0 8px 0;
-  color: #666;
-  text-transform: uppercase;
-}
-
-.tempo-display {
-  font-size: 16px;
+  font-size: 24px;
   margin: 0;
   color: #666;
-  font-weight: 600;
+  font-style: italic;
+}
+
+.tempo-display-large {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: #f5f5f5;
+  padding: 16px 24px;
+  border-radius: 8px;
+  border: 2px solid #1976d2;
+}
+
+.tempo-label {
+  font-size: 32px;
+  font-weight: bold;
+  color: #1976d2;
+}
+
+.tempo-value {
+  font-size: 48px;
+  font-weight: 900;
+  color: #1976d2;
+}
+
+.controls-section {
+  margin-bottom: 24px;
 }
 
 .controls {
