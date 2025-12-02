@@ -23,6 +23,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
   const selectedNoteValue = ref<NoteValue>(0.25) // 기본값: 4분 음표
   const selectedRestValue = ref<RestValue>(0.25) // 기본값: 4분 쉼표
   const selectedDrumPart = ref<DrumPart | null>(null) // 선택된 드럼 파트 (null이면 클릭 위치 자동 선택)
+  const isGhostNoteMode = ref<boolean>(false) // Ghost Note 모드
 
   // Undo/Redo 히스토리 관리
   const history = ref<DrumSheet[]>([])
@@ -156,6 +157,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
         beat,
         value: selectedNoteValue.value,
         style: getNoteStyle(part),
+        isGhost: isGhostNoteMode.value, // Ghost Note 모드일 때 isGhost 설정
       })
     }
 
@@ -260,6 +262,11 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     selectedDrumPart.value = part
   }
 
+  // Ghost Note 모드 토글
+  function toggleGhostNoteMode() {
+    isGhostNoteMode.value = !isGhostNoteMode.value
+  }
+
   // 마디별 섹션 정보 가져오기
   const measureSections = computed(() => {
     const map = new Map<string, Section>()
@@ -276,6 +283,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     selectedNoteValue,
     selectedRestValue,
     selectedDrumPart,
+    isGhostNoteMode,
     measureSections,
     canUndo,
     canRedo,
@@ -294,6 +302,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     setSelectedNoteValue,
     setSelectedRestValue,
     setSelectedDrumPart,
+    toggleGhostNoteMode,
     undo,
     redo,
   }

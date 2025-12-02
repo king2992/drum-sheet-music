@@ -239,6 +239,16 @@ function toggleMeasureSelection(measureId: string) {
             자동 모드: 보표를 클릭하면 위치에 따라 자동으로 드럼 파트가 선택됩니다
           </span>
         </p>
+        <!-- Ghost Note 모드 토글 -->
+        <div class="ghost-note-toggle">
+          <button
+            @click="store.toggleGhostNoteMode()"
+            :class="['btn', 'btn-ghost', { active: store.isGhostNoteMode }]"
+            title="Ghost Note 모드 (약하게 연주하는 음표)"
+          >
+            👻 Ghost Note {{ store.isGhostNoteMode ? 'ON' : 'OFF' }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -582,6 +592,26 @@ function toggleMeasureSelection(measureId: string) {
   color: #666;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.btn-ghost {
+  background: #9c27b0;
+  color: white;
+}
+
+.btn-ghost:hover {
+  background: #7b1fa2;
+}
+
+.btn-ghost.active {
+  background: #6a1b9a;
+  box-shadow: 0 0 10px rgba(156, 39, 176, 0.5);
+}
+
+.ghost-note-toggle {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
 }
 
 .sheet-container {

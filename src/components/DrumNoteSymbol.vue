@@ -9,6 +9,7 @@ const props = defineProps<{
   y: number
   offsetX?: number
   offsetY?: number
+  hasBeam?: boolean // 빔으로 연결되는지 여부
 }>()
 
 const style = computed(() => props.note.style || NoteStyle.DRUM)
@@ -35,17 +36,18 @@ const stemLength = computed(() => {
   }
 })
 
-// 음표 크기
+// 음표 크기 (Ghost note일 때 더 작게)
 const noteSize = computed(() => {
-  if (isCymbal.value) return 12
-  return 8
+  const baseSize = isCymbal.value ? 12 : 8
+  return props.note.isGhost ? baseSize * 0.7 : baseSize
 })
 
-// 심벌 크기 (파트별로 다르게)
+// 심벌 크기 (파트별로 다르게, Ghost note일 때 더 작게)
 const cymbalSize = computed(() => {
-  if (isCrash.value) return 10 // 크래시는 더 크게
-  if (isRide.value) return 8   // 라이드는 중간
-  return 7                      // 하이햇은 작게
+  let size = 7
+  if (isCrash.value) size = 10 // 크래시는 더 크게
+  else if (isRide.value) size = 8   // 라이드는 중간
+  return props.note.isGhost ? size * 0.7 : size
 })
 
 const finalX = computed(() => props.x + (props.offsetX || 0))
@@ -54,6 +56,22 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
 
 <template>
   <g :transform="`translate(${finalX}, ${finalY})`">
+    <!-- Ghost Note 괄호 -->
+    <g v-if="props.note.isGhost">
+      <path
+        d="M -14,-12 Q -16,0 -14,12"
+        fill="none"
+        stroke="#666"
+        stroke-width="1"
+      />
+      <path
+        d="M 14,-12 Q 16,0 14,12"
+        fill="none"
+        stroke="#666"
+        stroke-width="1"
+      />
+    </g>
+
     <!-- 심벌 (x 모양) -->
     <g v-if="isCymbal">
       <!-- Crash: 괄호로 둘러싼 큰 x -->
@@ -176,7 +194,7 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
         stroke-width="2"
       />
 
-      <!-- 8분음표: 스템 + 깃발 1개 -->
+      <!-- 8분음표: 스템 + 깃발 1개 (빔이 없을 때만) -->
       <g v-else-if="props.note.value === NoteValue.EIGHTH">
         <line
           x1="0"
@@ -187,6 +205,7 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
           stroke-width="2"
         />
         <path
+          v-if="!props.hasBeam"
           :d="`M 0,${cymbalSize + 2 + stemLength} Q 10,${cymbalSize + 2 + stemLength - 5} 8,${cymbalSize + 2 + stemLength - 12}`"
           fill="none"
           stroke="#000"
@@ -195,7 +214,7 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
         />
       </g>
 
-      <!-- 16분음표: 스템 + 깃발 2개 -->
+      <!-- 16분음표: 스템 + 깃발 2개 (빔이 없을 때만) -->
       <g v-else-if="props.note.value === NoteValue.SIXTEENTH">
         <line
           x1="0"
@@ -205,22 +224,24 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
           stroke="#000"
           stroke-width="2"
         />
-        <!-- 깃발 1 -->
-        <path
-          :d="`M 0,${cymbalSize + 2 + stemLength} Q 10,${cymbalSize + 2 + stemLength - 5} 8,${cymbalSize + 2 + stemLength - 12}`"
-          fill="none"
-          stroke="#000"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-        <!-- 깃발 2 -->
-        <path
-          :d="`M 0,${cymbalSize + 2 + stemLength - 6} Q 10,${cymbalSize + 2 + stemLength - 11} 8,${cymbalSize + 2 + stemLength - 18}`"
-          fill="none"
-          stroke="#000"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
+        <template v-if="!props.hasBeam">
+          <!-- 깃발 1 -->
+          <path
+            :d="`M 0,${cymbalSize + 2 + stemLength} Q 10,${cymbalSize + 2 + stemLength - 5} 8,${cymbalSize + 2 + stemLength - 12}`"
+            fill="none"
+            stroke="#000"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <!-- 깃발 2 -->
+          <path
+            :d="`M 0,${cymbalSize + 2 + stemLength - 6} Q 10,${cymbalSize + 2 + stemLength - 11} 8,${cymbalSize + 2 + stemLength - 18}`"
+            fill="none"
+            stroke="#000"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </template>
       </g>
     </g>
     
@@ -280,7 +301,7 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
         />
       </g>
 
-      <!-- 8분음표: 꽉 찬 원 + 스템 + 깃발 1개 -->
+      <!-- 8분음표: 꽉 찬 원 + 스템 + 깃발 1개 (빔이 없을 때만) -->
       <g v-else-if="props.note.value === NoteValue.EIGHTH">
         <circle
           cx="0"
@@ -299,8 +320,9 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
           stroke="#000"
           stroke-width="2"
         />
-        <!-- 깃발 -->
+        <!-- 깃발 (빔이 없을 때만) -->
         <path
+          v-if="!props.hasBeam"
           :d="`M ${noteSize},-${stemLength} Q ${noteSize + 10},-${stemLength - 5} ${noteSize + 8},-${stemLength - 12}`"
           fill="none"
           stroke="#000"
@@ -309,7 +331,7 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
         />
       </g>
 
-      <!-- 16분음표: 꽉 찬 원 + 스템 + 깃발 2개 -->
+      <!-- 16분음표: 꽉 찬 원 + 스템 + 깃발 2개 (빔이 없을 때만) -->
       <g v-else-if="props.note.value === NoteValue.SIXTEENTH">
         <circle
           cx="0"
@@ -328,22 +350,24 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
           stroke="#000"
           stroke-width="2"
         />
-        <!-- 깃발 1 -->
-        <path
-          :d="`M ${noteSize},-${stemLength} Q ${noteSize + 10},-${stemLength - 5} ${noteSize + 8},-${stemLength - 12}`"
-          fill="none"
-          stroke="#000"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-        <!-- 깃발 2 -->
-        <path
-          :d="`M ${noteSize},-${stemLength - 6} Q ${noteSize + 10},-${stemLength - 11} ${noteSize + 8},-${stemLength - 18}`"
-          fill="none"
-          stroke="#000"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
+        <template v-if="!props.hasBeam">
+          <!-- 깃발 1 -->
+          <path
+            :d="`M ${noteSize},-${stemLength} Q ${noteSize + 10},-${stemLength - 5} ${noteSize + 8},-${stemLength - 12}`"
+            fill="none"
+            stroke="#000"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <!-- 깃발 2 -->
+          <path
+            :d="`M ${noteSize},-${stemLength - 6} Q ${noteSize + 10},-${stemLength - 11} ${noteSize + 8},-${stemLength - 18}`"
+            fill="none"
+            stroke="#000"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </template>
       </g>
 
       <!-- 기본값 (값이 없으면 그냥 원) -->
