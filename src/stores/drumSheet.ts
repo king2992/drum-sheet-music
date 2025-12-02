@@ -106,10 +106,24 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
       const index = drumSheet.value.measures.findIndex((m) => m.id === afterMeasureId)
       if (index !== -1) {
         drumSheet.value.measures.splice(index + 1, 0, newMeasure)
+        saveHistory()
         return
       }
     }
     drumSheet.value.measures.push(newMeasure)
+    saveHistory()
+  }
+
+  // 박자 변경
+  function setTimeSignature(measureId: string, beats: number, noteValue: number) {
+    const measure = drumSheet.value.measures.find((m) => m.id === measureId)
+    if (measure) {
+      measure.timeSignature = { beats, noteValue }
+      // 박자가 변경되면 범위를 벗어나는 음표들을 정리
+      measure.notes = measure.notes.filter((n) => n.beat < beats)
+      measure.rests = measure.rests?.filter((r) => r.beat < beats) || []
+      saveHistory()
+    }
   }
 
   // 마디 삭제
@@ -441,6 +455,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     removeSection,
     setRepeatStart,
     setRepeatEnd,
+    setTimeSignature,
     setTitle,
     setArtist,
     setTempo,

@@ -19,6 +19,7 @@ const emit = defineEmits<{
   clearMeasure: []
   toggleRepeatStart: []
   toggleRepeatEnd: []
+  changeTimeSignature: [beats: number, noteValue: number]
 }>()
 
 // 박자표 표시
@@ -32,6 +33,22 @@ const timeSignatureText = computed(() => {
 
 // 쉼표 모드 토글
 const isRestMode = ref(false)
+
+// 박자 변경 다이얼로그
+const showTimeSignatureDialog = ref(false)
+const newBeats = ref(4)
+const newNoteValue = ref(4)
+
+function openTimeSignatureDialog() {
+  newBeats.value = props.measure.timeSignature.beats
+  newNoteValue.value = props.measure.timeSignature.noteValue
+  showTimeSignatureDialog.value = true
+}
+
+function applyTimeSignature() {
+  emit('changeTimeSignature', newBeats.value, newNoteValue.value)
+  showTimeSignatureDialog.value = false
+}
 
 function handleNoteClick(part: DrumPart, beat: number) {
   if (isRestMode.value) {
@@ -59,7 +76,9 @@ function handleRestClick(beat: number) {
 
       <!-- 박자표 -->
       <div class="time-signature-wrapper">
-        <span class="time-signature">{{ timeSignatureText }}</span>
+        <span class="time-signature" @click="openTimeSignatureDialog" :title="'박자 변경 (현재: ' + timeSignatureText + ')'">
+          {{ timeSignatureText }}
+        </span>
       </div>
       
       <!-- 5선 보표 -->
@@ -109,6 +128,32 @@ function handleRestClick(beat: number) {
         >
           ×
         </button>
+      </div>
+    </div>
+
+    <!-- 박자 변경 다이얼로그 -->
+    <div v-if="showTimeSignatureDialog" class="dialog-overlay" @click="showTimeSignatureDialog = false">
+      <div class="dialog" @click.stop>
+        <h3>박자 변경</h3>
+        <div class="dialog-content">
+          <div class="form-group">
+            <label>분자 (박자 수):</label>
+            <input v-model.number="newBeats" type="number" min="1" max="16" />
+          </div>
+          <div class="form-group">
+            <label>분모 (기준 음표):</label>
+            <select v-model.number="newNoteValue">
+              <option :value="2">2 (2분음표 기준)</option>
+              <option :value="4">4 (4분음표 기준)</option>
+              <option :value="8">8 (8분음표 기준)</option>
+              <option :value="16">16 (16분음표 기준)</option>
+            </select>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button @click="showTimeSignatureDialog = false" class="btn btn-cancel">취소</button>
+          <button @click="applyTimeSignature" class="btn btn-apply">적용</button>
+        </div>
       </div>
     </div>
   </div>
@@ -178,6 +223,15 @@ function handleRestClick(beat: number) {
   font-size: 18px;
   color: #333;
   font-family: 'Times New Roman', serif;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.time-signature:hover {
+  background: #e3f2fd;
+  color: #1976d2;
 }
 
 .staff-wrapper {
@@ -238,5 +292,95 @@ function handleRestClick(beat: number) {
 .remove-btn:hover {
   background: #cc0000;
   border-color: #cc0000;
+}
+
+/* 다이얼로그 스타일 */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.dialog {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 300px;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dialog h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #555;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: #999;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background: #777;
+}
+
+.btn-apply {
+  background: #1976d2;
+  color: white;
+}
+
+.btn-apply:hover {
+  background: #1565c0;
 }
 </style>
