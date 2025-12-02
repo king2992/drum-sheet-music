@@ -20,6 +20,7 @@ const emit = defineEmits<{
   toggleRepeatStart: []
   toggleRepeatEnd: []
   changeTimeSignature: [beats: number, noteValue: number]
+  duplicateMeasure: []
 }>()
 
 // 박자표 표시
@@ -113,6 +114,13 @@ function handleRestClick(beat: number) {
           title="쉼표 모드"
         >
           𝄽
+        </button>
+        <button
+          @click="emit('duplicateMeasure')"
+          class="control-btn copy-btn"
+          title="마디 복사"
+        >
+          📋
         </button>
         <button
           @click="emit('clearMeasure')"
@@ -270,6 +278,17 @@ function handleRestClick(beat: number) {
   background: #1976d2;
   color: white;
   border-color: #1976d2;
+}
+
+.copy-btn {
+  background: #4caf50;
+  color: white;
+  border-color: #4caf50;
+}
+
+.copy-btn:hover {
+  background: #45a049;
+  border-color: #45a049;
 }
 
 .clear-btn {

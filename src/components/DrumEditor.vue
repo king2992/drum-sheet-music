@@ -473,6 +473,7 @@ function toggleMeasureSelection(measureId: string) {
           @toggle-repeat-end="handleToggleRepeatEnd(measure.id)"
           @remove-measure="() => store.removeMeasure(measure.id)"
           @change-time-signature="(beats, noteValue) => store.setTimeSignature(measure.id, beats, noteValue)"
+          @duplicate-measure="() => store.duplicateMeasure(measure.id)"
         />
       </div>
     </div>

@@ -114,6 +114,43 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     saveHistory()
   }
 
+  // 마디 복사
+  function duplicateMeasure(measureId: string) {
+    const measure = drumSheet.value.measures.find((m) => m.id === measureId)
+    if (!measure) return
+
+    // 마디를 깊은 복사하고 새 ID 생성
+    const copiedMeasure: Measure = {
+      id: uuidv4(),
+      timeSignature: { ...measure.timeSignature },
+      notes: measure.notes.map(note => ({
+        ...note,
+        id: uuidv4(),
+      })),
+      rests: measure.rests ? measure.rests.map(rest => ({
+        ...rest,
+        id: uuidv4(),
+      })) : [],
+      dynamics: measure.dynamics ? measure.dynamics.map(dynamic => ({
+        ...dynamic,
+        id: uuidv4(),
+      })) : [],
+      hairpins: measure.hairpins ? measure.hairpins.map(hairpin => ({
+        ...hairpin,
+        id: uuidv4(),
+      })) : [],
+      hasRepeatStart: measure.hasRepeatStart,
+      hasRepeatEnd: measure.hasRepeatEnd,
+    }
+
+    // 원본 마디 바로 뒤에 삽입
+    const index = drumSheet.value.measures.findIndex((m) => m.id === measureId)
+    if (index !== -1) {
+      drumSheet.value.measures.splice(index + 1, 0, copiedMeasure)
+      saveHistory()
+    }
+  }
+
   // 박자 변경
   function setTimeSignature(measureId: string, beats: number, noteValue: number) {
     const measure = drumSheet.value.measures.find((m) => m.id === measureId)
@@ -447,6 +484,7 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
     canUndo,
     canRedo,
     addMeasure,
+    duplicateMeasure,
     removeMeasure,
     clearMeasure,
     toggleNote,
