@@ -10,6 +10,9 @@ const props = defineProps<{
   isFirstInSection?: boolean
   width?: number
   measureNumber?: number
+  isPreview?: boolean
+  isFirstInRow?: boolean
+  isLastInRow?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -65,7 +68,7 @@ function handleRestClick(beat: number) {
 </script>
 
 <template>
-  <div class="drum-measure">
+  <div class="drum-measure" :class="{ 'preview-mode': isPreview }">
     <!-- 마디 번호 -->
     <div v-if="measureNumber" class="measure-number">{{ measureNumber }}</div>
 
@@ -75,25 +78,23 @@ function handleRestClick(beat: number) {
         <div class="section-label-text">{{ section.label }}</div>
       </div>
 
-      <!-- 박자표 -->
-      <div class="time-signature-wrapper">
-        <span class="time-signature" @click="openTimeSignatureDialog" :title="'박자 변경 (현재: ' + timeSignatureText + ')'">
-          {{ timeSignatureText }}
-        </span>
-      </div>
+      <!-- 박자표 제거됨 -->
       
       <!-- 5선 보표 -->
       <div class="staff-wrapper">
         <DrumStaff
           :measure="measure"
           :width="width || 200"
+          :is-preview="isPreview"
+          :is-first-in-row="isPreview ? isFirstInRow : undefined"
+          :is-last-in-row="isPreview ? isLastInRow : undefined"
           @note-click="handleNoteClick"
           @rest-click="(beat) => emit('toggleRest', beat)"
         />
       </div>
       
       <!-- 컨트롤 버튼 -->
-      <div class="measure-controls">
+      <div v-if="!isPreview" class="measure-controls">
         <button
           @click="emit('toggleRepeatStart')"
           :class="['control-btn', { active: measure.hasRepeatStart }]"
@@ -178,6 +179,50 @@ function handleRestClick(beat: number) {
   border: 1px solid #e0e0e0;
 }
 
+.drum-measure.preview-mode {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+  display: inline-block;
+  vertical-align: top;
+  margin-right: -10px; /* 마디 간 겹침으로 보표선 연결 */
+  overflow: visible; /* 보표선 확장이 보이도록 */
+}
+
+.drum-measure.preview-mode .measure-container {
+  gap: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.drum-measure.preview-mode .measure-number {
+  display: none;
+}
+
+.drum-measure.preview-mode .section-label-wrapper {
+  min-width: 45px;
+  max-width: 45px;
+  flex-shrink: 0;
+}
+
+.drum-measure.preview-mode .section-label-text {
+  font-size: 10px;
+  padding: 2px;
+}
+
+.drum-measure.preview-mode .time-signature-wrapper {
+  display: none; /* 박자표 제거됨 */
+}
+
+.drum-measure.preview-mode .staff-wrapper {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
 .measure-number {
   position: absolute;
   top: 4px;
@@ -231,13 +276,16 @@ function handleRestClick(beat: number) {
   font-size: 18px;
   color: #333;
   font-family: 'Times New Roman', serif;
-  cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
   transition: all 0.2s;
 }
 
-.time-signature:hover {
+.time-signature.clickable {
+  cursor: pointer;
+}
+
+.time-signature.clickable:hover {
   background: #e3f2fd;
   color: #1976d2;
 }

@@ -204,6 +204,11 @@ const newSectionType = ref<SectionType>(SectionType.VERSE)
 const newSectionLabel = ref('')
 const selectedMeasureIds = ref<string[]>([])
 
+// 마디 추가 (박자표 설정 제거)
+function addMeasureDirectly() {
+  store.addMeasure()
+}
+
 function openSectionDialog() {
   showSectionDialog.value = true
   selectedMeasureIds.value = []
@@ -428,7 +433,7 @@ function toggleMeasureSelection(measureId: string) {
           style="display: none"
         />
         <div class="toolbar-divider"></div>
-        <button @click="store.addMeasure()" class="btn btn-primary">
+        <button @click="addMeasureDirectly" class="btn btn-primary">
           ➕ 마디 추가
         </button>
         <button @click="openSectionDialog" class="btn btn-secondary">
@@ -465,7 +470,7 @@ function toggleMeasureSelection(measureId: string) {
           :section="section"
           :is-first-in-section="isFirstInSection"
           :measure-number="index + 1"
-          :width="240"
+          :width="200"
           @toggle-note="(part, beat) => handleToggleNote(measure.id, part, beat)"
           @toggle-rest="(beat) => handleToggleRest(measure.id, beat)"
           @clear-measure="() => store.clearMeasure(measure.id)"
@@ -520,8 +525,9 @@ function toggleMeasureSelection(measureId: string) {
       </div>
     </div>
 
-    <!-- 사용 방법 -->
-    <div class="instructions">
+    <!-- 사용 방법 (축소) -->
+    <details class="instructions">
+      <summary style="cursor: pointer; font-weight: 600; margin-bottom: 12px;">📖 사용 방법 (클릭하여 펼치기)</summary>
       <h3>📖 기본 사용법</h3>
       <ul>
         <li><strong>드럼 파트 선택:</strong> 상단의 드럼 파트 버튼(크래시, 라이드, 하이햇, 탐, 스네어, 베이스 등)을 클릭하여 원하는 드럼을 선택하세요. "자동" 모드에서는 클릭 위치에 따라 자동으로 드럼이 선택됩니다.</li>
@@ -570,23 +576,21 @@ function toggleMeasureSelection(measureId: string) {
         <li>다이나믹 표시는 Georgia 세리프 이탤릭체로 전문적으로 렌더링됩니다</li>
         <li>모든 변경사항은 실행 취소 히스토리에 저장되어 안전하게 작업할 수 있습니다</li>
       </ul>
-    </div>
+    </details>
   </div>
 </template>
 
 <style scoped>
 .drum-editor {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 24px;
+  padding: 20px;
   background: #f9f9f9;
-  min-height: 100vh;
+  height: 100%;
 }
 
 .editor-header {
-  margin-bottom: 32px;
+  margin-bottom: 20px;
   background: white;
-  padding: 24px;
+  padding: 16px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -609,21 +613,21 @@ function toggleMeasureSelection(measureId: string) {
 }
 
 .editor-title {
-  font-size: 20px;
+  font-size: 18px;
   margin: 0;
   color: #555;
 }
 
 .sheet-title-section {
   background: white;
-  padding: 32px;
-  margin-bottom: 24px;
+  padding: 20px;
+  margin-bottom: 16px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-left: 6px solid #1976d2;
+  border-left: 4px solid #1976d2;
 }
 
 .sheet-title-display {
@@ -631,16 +635,16 @@ function toggleMeasureSelection(measureId: string) {
 }
 
 .main-title {
-  font-size: 48px;
+  font-size: 32px;
   font-weight: 900;
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   color: #222;
   text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
 }
 
 .artist-name {
-  font-size: 24px;
+  font-size: 18px;
   margin: 0;
   color: #666;
   font-style: italic;
@@ -649,35 +653,35 @@ function toggleMeasureSelection(measureId: string) {
 .tempo-display-large {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
   background: #f5f5f5;
-  padding: 16px 24px;
-  border-radius: 8px;
+  padding: 12px 16px;
+  border-radius: 6px;
   border: 2px solid #1976d2;
 }
 
 .tempo-label {
-  font-size: 32px;
+  font-size: 20px;
   font-weight: bold;
   color: #1976d2;
 }
 
 .tempo-value {
-  font-size: 48px;
+  font-size: 32px;
   font-weight: 900;
   color: #1976d2;
 }
 
 .controls-section {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .controls {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   flex-wrap: wrap;
   background: #f5f5f5;
-  padding: 16px;
+  padding: 12px;
   border-radius: 8px;
 }
 
@@ -694,11 +698,11 @@ function toggleMeasureSelection(measureId: string) {
 }
 
 .title-input {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 14px;
-  min-width: 200px;
+  font-size: 13px;
+  min-width: 150px;
 }
 
 .tempo-input {
@@ -996,8 +1000,8 @@ function toggleMeasureSelection(measureId: string) {
 
 .measures-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
   align-items: start;
 }
 
@@ -1055,6 +1059,34 @@ function toggleMeasureSelection(measureId: string) {
   font-size: 14px;
 }
 
+.time-signature-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-signature-input {
+  width: 80px;
+  text-align: center;
+}
+
+.time-signature-separator {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.time-signature-select {
+  width: 100px;
+}
+
+.form-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
 .measure-selection {
   display: flex;
   flex-wrap: wrap;
@@ -1088,11 +1120,12 @@ function toggleMeasureSelection(measureId: string) {
 }
 
 .instructions {
-  margin-top: 32px;
-  padding: 20px;
+  margin-top: 20px;
+  padding: 16px;
   background: #e3f2fd;
   border-radius: 8px;
   border-left: 4px solid #1976d2;
+  font-size: 13px;
 }
 
 .instructions h3 {

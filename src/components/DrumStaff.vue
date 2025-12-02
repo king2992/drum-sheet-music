@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, nextTick } from 'vue'
 import type { Measure, DrumNote, Rest } from '@/types/drum'
 import { DrumPart, NoteStyle, NoteValue } from '@/types/drum'
 import { useDrumSheetStore } from '@/stores/drumSheet'
@@ -9,6 +9,9 @@ import RestSymbol from './RestSymbol.vue'
 const props = defineProps<{
   measure: Measure
   width?: number
+  isPreview?: boolean
+  isFirstInRow?: boolean
+  isLastInRow?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -135,24 +138,32 @@ function getBeamGroupsByNoteValue(noteValue: NoteValue): Array<{ notes: DrumNote
   const sortedBeats = Array.from(beatGroups.keys()).map(k => parseFloat(k)).sort((a, b) => a - b)
   const groups: Array<{ notes: DrumNote[], startBeat: number, endBeat: number }> = []
 
+  console.log('🎵 Sorted beats:', sortedBeats, 'for noteValue:', noteValue)
+
   if (sortedBeats.length === 0) return []
 
-  let currentGroupBeats: number[] = [sortedBeats[0]]
+  const firstBeat = sortedBeats[0]
+  if (firstBeat === undefined) return []
+
+  let currentGroupBeats: number[] = [firstBeat]
 
   for (let i = 1; i < sortedBeats.length; i++) {
     const prevBeat = sortedBeats[i - 1]
     const currBeat = sortedBeats[i]
+    if (prevBeat === undefined || currBeat === undefined) continue
     const beatDiff = currBeat - prevBeat
 
     // 연속된 비트인지 확인 (8분음표는 0.5, 16분음표는 0.25 간격)
     const expectedDiff = noteValue === NoteValue.EIGHTH ? 0.5 : 0.25
+
+    console.log(`  Beat diff: ${beatDiff.toFixed(2)}, expected: ${expectedDiff}, continuous: ${Math.abs(beatDiff - expectedDiff) < 0.01}`)
 
     if (Math.abs(beatDiff - expectedDiff) < 0.01) {
       // 연속된 비트면 같은 그룹에 추가
       currentGroupBeats.push(currBeat)
     } else {
       // 연속되지 않으면 현재 그룹 저장하고 새 그룹 시작
-      if (currentGroupBeats.length >= 1) {
+      if (currentGroupBeats.length >= 2) {
         const groupNotes: DrumNote[] = []
         currentGroupBeats.forEach(beat => {
           const beatKey = beat.toFixed(2)
@@ -163,11 +174,15 @@ function getBeamGroupsByNoteValue(noteValue: NoteValue): Array<{ notes: DrumNote
         })
 
         if (groupNotes.length > 0) {
-          groups.push({
-            notes: groupNotes,
-            startBeat: currentGroupBeats[0],
-            endBeat: currentGroupBeats[currentGroupBeats.length - 1]
-          })
+          const startBeat = currentGroupBeats[0]
+          const endBeat = currentGroupBeats[currentGroupBeats.length - 1]
+          if (startBeat !== undefined && endBeat !== undefined) {
+            groups.push({
+              notes: groupNotes,
+              startBeat,
+              endBeat
+            })
+          }
         }
       }
       currentGroupBeats = [currBeat]
@@ -175,7 +190,7 @@ function getBeamGroupsByNoteValue(noteValue: NoteValue): Array<{ notes: DrumNote
   }
 
   // 마지막 그룹 추가
-  if (currentGroupBeats.length >= 1) {
+  if (currentGroupBeats.length >= 2) {
     const groupNotes: DrumNote[] = []
     currentGroupBeats.forEach(beat => {
       const beatKey = beat.toFixed(2)
@@ -186,13 +201,20 @@ function getBeamGroupsByNoteValue(noteValue: NoteValue): Array<{ notes: DrumNote
     })
 
     if (groupNotes.length > 0) {
-      groups.push({
-        notes: groupNotes,
-        startBeat: currentGroupBeats[0],
-        endBeat: currentGroupBeats[currentGroupBeats.length - 1]
-      })
+      const startBeat = currentGroupBeats[0]
+      const endBeat = currentGroupBeats[currentGroupBeats.length - 1]
+      if (startBeat !== undefined && endBeat !== undefined) {
+        groups.push({
+          notes: groupNotes,
+          startBeat,
+          endBeat
+        })
+      }
     }
   }
+
+  console.log('✅ Final beam groups:', groups.length, 'groups')
+  groups.forEach((g, i) => console.log(`  Group ${i}: ${g.notes.length} notes from beat ${g.startBeat} to ${g.endBeat}`))
 
   return groups
 }
@@ -334,34 +356,29 @@ function handleRestClick(beat: number) {
 
 <template>
   <svg
-    :width="STAFF_WIDTH + 40"
+    :width="STAFF_WIDTH + 40 + (isPreview ? 20 : 0)"
     :height="STAFF_HEIGHT + STAFF_PADDING * 2 + 60"
     class="drum-staff"
-    @click="handleStaffClick"
+    :class="{ 'preview-mode': isPreview }"
+    @click="!isPreview && handleStaffClick($event)"
+    :style="isPreview ? 'overflow: visible; width: 100%; max-width: 100%;' : ''"
   >
-    <!-- 5선 보표 -->
-    <g :transform="`translate(20, ${30 + STAFF_PADDING})`">
+      <!-- 5선 보표 -->
+      <g :transform="`translate(20, ${30 + STAFF_PADDING})`">
       <!-- 보표선 -->
+      <!-- preview 모드일 때: 보표선을 충분히 확장하여 마디 간 자연스럽게 연결 -->
       <line
         v-for="i in STAFF_LINES"
         :key="i"
-        :x1="0"
+        :x1="isPreview ? -10 : 0"
         :y1="(i - 1) * LINE_SPACING"
-        :x2="STAFF_WIDTH"
+        :x2="isPreview ? STAFF_WIDTH + 10 : STAFF_WIDTH"
         :y2="(i - 1) * LINE_SPACING"
         stroke="#000"
         stroke-width="1.5"
       />
       
-      <!-- 마디 구분선 -->
-      <line
-        :x1="STAFF_WIDTH"
-        :y1="0"
-        :x2="STAFF_WIDTH"
-        :y2="STAFF_HEIGHT"
-        stroke="#000"
-        stroke-width="2"
-      />
+      <!-- 마디 구분선 제거됨 -->
       
       <!-- 박자 구분선 -->
       <line
@@ -446,6 +463,25 @@ function handleRestClick(beat: number) {
             :y="partPositions[note.part] + STAFF_HEIGHT / 2"
             :has-beam="needsBeam(note.value) && getBeamGroupsByNoteValue(note.value).some(g => g.notes.some(n => n.id === note.id))"
           />
+          <!-- 디버깅: 비트 위치와 음표 타입 표시 -->
+          <text
+            :x="getBeatX(note.beat)"
+            :y="STAFF_HEIGHT + 50"
+            text-anchor="middle"
+            font-size="10"
+            fill="#ff0000"
+          >
+            {{ note.beat.toFixed(2) }}
+          </text>
+          <text
+            :x="getBeatX(note.beat)"
+            :y="STAFF_HEIGHT + 65"
+            text-anchor="middle"
+            font-size="9"
+            fill="#0000ff"
+          >
+            {{ note.value === 0.25 ? '4분' : note.value === 0.125 ? '8분' : note.value === 0.0625 ? '16분' : note.value }}
+          </text>
         </g>
       </g>
       
@@ -608,6 +644,18 @@ function handleRestClick(beat: number) {
 
 .drum-staff:hover {
   background: #fafafa;
+}
+
+.drum-staff.preview-mode {
+  cursor: default;
+  overflow: visible !important;
+  border: none;
+  width: 100% !important;
+  max-width: 100%;
+}
+
+.drum-staff.preview-mode:hover {
+  background: white;
 }
 </style>
 

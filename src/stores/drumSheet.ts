@@ -93,11 +93,11 @@ export const useDrumSheetStore = defineStore('drumSheet', () => {
   }
 
   // 마디 추가
-  function addMeasure(afterMeasureId?: string) {
+  function addMeasure(afterMeasureId?: string, timeSignature?: { beats: number; noteValue: number }) {
     const lastMeasure = drumSheet.value.measures[drumSheet.value.measures.length - 1]
     const newMeasure: Measure = {
       id: uuidv4(),
-      timeSignature: lastMeasure.timeSignature,
+      timeSignature: timeSignature || lastMeasure.timeSignature,
       notes: [],
       rests: [],
     }
