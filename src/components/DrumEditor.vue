@@ -249,6 +249,17 @@ function toggleMeasureSelection(measureId: string) {
             👻 Ghost Note {{ store.isGhostNoteMode ? 'ON' : 'OFF' }}
           </button>
         </div>
+
+        <!-- Accent 모드 토글 -->
+        <div class="accent-toggle">
+          <button
+            @click="store.toggleAccentMode()"
+            :class="['btn', 'btn-accent', { active: store.isAccentMode }]"
+            title="Accent 모드 (강하게 연주하는 음표)"
+          >
+            ▶ Accent {{ store.isAccentMode ? 'ON' : 'OFF' }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -609,10 +620,25 @@ function toggleMeasureSelection(measureId: string) {
   box-shadow: 0 0 10px rgba(156, 39, 176, 0.5);
 }
 
-.ghost-note-toggle {
+.ghost-note-toggle,
+.accent-toggle {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #ddd;
+}
+
+.btn-accent {
+  background: #ff5722;
+  color: white;
+}
+
+.btn-accent:hover {
+  background: #e64a19;
+}
+
+.btn-accent.active {
+  background: #d84315;
+  box-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
 }
 
 .sheet-container {

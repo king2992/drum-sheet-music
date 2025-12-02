@@ -43,6 +43,7 @@ export interface DrumNote {
   style?: NoteStyle // 음표 스타일 (기본값은 파트에 따라 결정)
   isOpen?: boolean // 하이햇 오픈 여부
   isGhost?: boolean // Ghost Note 여부 (약하게 연주)
+  hasAccent?: boolean // 액센트 표시 (강하게 연주)
 }
 
 // 쉼표

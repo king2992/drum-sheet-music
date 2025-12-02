@@ -56,6 +56,18 @@ const finalY = computed(() => props.y + (props.offsetY || 0))
 
 <template>
   <g :transform="`translate(${finalX}, ${finalY})`">
+    <!-- Accent 표시 (>) -->
+    <g v-if="props.note.hasAccent">
+      <path
+        d="M -8,-20 L 0,-15 L -8,-10"
+        fill="none"
+        stroke="#000"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </g>
+
     <!-- Ghost Note 괄호 -->
     <g v-if="props.note.isGhost">
       <path
