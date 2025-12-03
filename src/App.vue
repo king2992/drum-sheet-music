@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import DrumEditor from './components/DrumEditor.vue'
-import DrumPreview from './components/DrumPreview.vue'
 
 const isLoggedIn = ref(false)
 const userName = ref('사용자')
@@ -34,19 +33,9 @@ const userName = ref('사용자')
       </div>
     </header>
 
-    <!-- 메인 컨텐츠 -->
+    <!-- 메인 컨텐츠 (풀사이즈 에디터) -->
     <main class="app-main">
-      <div class="content-wrapper">
-        <!-- 왼쪽: 악보 에디터 -->
-        <div class="editor-panel">
-          <DrumEditor />
-        </div>
-        
-        <!-- 오른쪽: 미리보기 -->
-        <div class="preview-panel">
-          <DrumPreview />
-        </div>
-      </div>
+      <DrumEditor />
     </main>
 
     <!-- 푸터 -->
@@ -81,7 +70,6 @@ body {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  max-width: 100%;
 }
 
 /* 헤더 */
@@ -95,8 +83,8 @@ body {
 }
 
 .header-content {
-  width: 100%;
-  margin: 0;
+  max-width: 1800px;
+  margin: 0 auto;
   padding: 0 24px;
   display: flex;
   justify-content: space-between;
@@ -196,35 +184,11 @@ body {
   background: #e0e0e0;
 }
 
-/* 메인 컨텐츠 */
+/* 메인 컨텐츠 - 풀사이즈 */
 .app-main {
   flex: 1;
-  overflow: hidden;
   width: 100%;
-  max-width: 100%;
-}
-
-.content-wrapper {
-  display: flex;
-  height: calc(100vh - 64px - 60px); /* 헤더와 푸터 높이 제외 */
-  gap: 0;
-  width: 100%;
-  max-width: 100%;
-}
-
-.editor-panel {
-  flex: 0 0 35%;
   overflow-y: auto;
-  background: #f9f9f9;
-  border-right: 1px solid #e0e0e0;
-}
-
-.preview-panel {
-  flex: 1;
-  overflow: hidden;
-  background: #ffffff;
-  padding: 0;
-  width: 100%;
 }
 
 /* 푸터 */
@@ -236,8 +200,8 @@ body {
 }
 
 .footer-content {
-  width: 100%;
-  margin: 0;
+  max-width: 1800px;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;

@@ -234,229 +234,109 @@ function toggleMeasureSelection(measureId: string) {
 
 <template>
   <div class="drum-editor">
-    <!-- 헤더 -->
-    <div class="editor-header">
-      <div class="title-section">
-        <h1 class="editor-title">드럼 악보 에디터</h1>
+    <!-- 상단 툴바 - 모든 컨트롤 통합 -->
+    <div class="top-toolbar">
+      <!-- 파일 관리 -->
+      <div class="toolbar-group">
+        <button @click="handleNewSheet" class="btn btn-sm" title="새 악보">📄</button>
+        <button @click="triggerFileInput" class="btn btn-sm" title="열기">📂</button>
+        <button @click="store.saveToFile()" class="btn btn-sm" title="저장">💾</button>
+        <button @click="handlePrint" class="btn btn-sm" title="인쇄">🖨️</button>
+        <input ref="fileInput" type="file" accept=".json" @change="handleLoadFile" style="display: none" />
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Undo/Redo -->
+      <div class="toolbar-group">
+        <button @click="store.undo()" :disabled="!store.canUndo" class="btn btn-sm" title="실행 취소 (Ctrl+Z)">↶</button>
+        <button @click="store.redo()" :disabled="!store.canRedo" class="btn btn-sm" title="다시 실행 (Ctrl+Y)">↷</button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- 음표 길이 -->
+      <div class="toolbar-group">
+        <label class="toolbar-label">음표:</label>
+        <select :value="store.selectedNoteValue" @change="store.setSelectedNoteValue(Number(($event.target as HTMLSelectElement).value))" class="select-sm">
+          <option v-for="nv in noteValues" :key="nv.value" :value="nv.value">{{ nv.symbol }} {{ nv.label }}</option>
+        </select>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- 드럼 파트 -->
+      <div class="toolbar-group">
+        <label class="toolbar-label">드럼:</label>
+        <button
+          v-for="dp in drumParts"
+          :key="dp.part"
+          @click="store.setSelectedDrumPart(store.selectedDrumPart === dp.part ? null : dp.part)"
+          :class="['btn', 'btn-sm', 'drum-btn', { active: store.selectedDrumPart === dp.part }]"
+          :title="dp.label"
+        >{{ dp.shortLabel }}</button>
+        <button @click="store.setSelectedDrumPart(null)" :class="['btn', 'btn-sm', 'drum-btn', { active: store.selectedDrumPart === null }]" title="자동">Auto</button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- 모드 -->
+      <div class="toolbar-group">
+        <button @click="store.toggleGhostNoteMode()" :class="['btn', 'btn-sm', { active: store.isGhostNoteMode }]" title="Ghost Note (G)">👻</button>
+        <button @click="store.toggleAccentMode()" :class="['btn', 'btn-sm', { active: store.isAccentMode }]" title="Accent (A)">▶</button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- 다이나믹 -->
+      <div class="toolbar-group">
+        <button
+          v-for="dt in dynamicTypes"
+          :key="dt.type"
+          @click="store.setSelectedDynamicType(store.selectedDynamicType === dt.type ? null : dt.type)"
+          :class="['btn', 'btn-sm', 'dynamic-btn', { active: store.selectedDynamicType === dt.type }]"
+          :title="dt.label"
+        >{{ dt.type }}</button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- 마디 관리 -->
+      <div class="toolbar-group">
+        <button @click="addMeasureDirectly" class="btn btn-sm btn-primary">➕ 마디</button>
+        <button @click="openSectionDialog" class="btn btn-sm">📑 섹션</button>
       </div>
     </div>
 
-    <!-- 악보 제목 영역 (크고 명확하게) -->
-    <div class="sheet-title-section">
-      <div class="sheet-title-display">
-        <h2 class="main-title">{{ store.drumSheet.title }}</h2>
-        <p v-if="store.drumSheet.artist" class="artist-name">{{ store.drumSheet.artist }}</p>
-      </div>
-      <div class="tempo-display-large">
-        <span class="tempo-label">♩ =</span>
-        <span class="tempo-value">{{ store.drumSheet.tempo }}</span>
-      </div>
-    </div>
-
-    <!-- 컨트롤 영역 -->
-    <div class="controls-section">
-      <div class="controls">
-        <div class="control-group">
-          <label>제목:</label>
-          <input
-            type="text"
-            :value="store.drumSheet.title"
-            @input="store.setTitle(($event.target as HTMLInputElement).value)"
-            class="title-input"
-            placeholder="곡 제목"
-          />
-        </div>
-
-        <div class="control-group">
-          <label>아티스트:</label>
-          <input
-            type="text"
-            :value="store.drumSheet.artist || ''"
-            @input="store.setArtist(($event.target as HTMLInputElement).value)"
-            class="title-input"
-            placeholder="아티스트명"
-          />
-        </div>
-
-        <div class="control-group">
-          <label>템포:</label>
-          <input
-            type="number"
-            :value="store.drumSheet.tempo"
-            @input="store.setTempo(Number(($event.target as HTMLInputElement).value))"
-            min="40"
-            max="240"
-            class="tempo-input"
-          />
-          <span>BPM</span>
-        </div>
-
-        <div class="control-group">
-          <label>음표 길이:</label>
-          <select
-            :value="store.selectedNoteValue"
-            @change="store.setSelectedNoteValue(Number(($event.target as HTMLSelectElement).value))"
-            class="note-value-select"
-          >
-            <option v-for="nv in noteValues" :key="nv.value" :value="nv.value">
-              {{ nv.symbol }} {{ nv.label }}
-            </option>
-          </select>
-        </div>
-
-        <div class="control-group">
-          <label>쉼표 길이:</label>
-          <select
-            :value="store.selectedRestValue"
-            @change="store.setSelectedRestValue(Number(($event.target as HTMLSelectElement).value))"
-            class="note-value-select"
-          >
-            <option v-for="rv in restValues" :key="rv.value" :value="rv.value">
-              {{ rv.symbol }} {{ rv.label }}
-            </option>
-          </select>
-        </div>
-      </div>
-
-      <!-- 드럼 파트 선택 -->
-      <div class="drum-part-selector">
-        <label class="drum-part-label">드럼 파트 선택:</label>
-        <div class="drum-part-buttons">
-          <button
-            v-for="dp in drumParts"
-            :key="dp.part"
-            @click="store.setSelectedDrumPart(store.selectedDrumPart === dp.part ? null : dp.part)"
-            :class="['drum-part-btn', { active: store.selectedDrumPart === dp.part }]"
-            :title="dp.label"
-          >
-            <span class="drum-part-icon">{{ dp.icon }}</span>
-            <span class="drum-part-text">{{ dp.shortLabel }}</span>
-          </button>
-          <button
-            @click="store.setSelectedDrumPart(null)"
-            :class="['drum-part-btn', 'auto-btn', { active: store.selectedDrumPart === null }]"
-            title="자동 선택 (클릭 위치에 따라 자동 선택)"
-          >
-            <span class="drum-part-text">자동</span>
-          </button>
-        </div>
-        <p class="drum-part-hint">
-          <span v-if="store.selectedDrumPart">
-            선택됨: {{ drumParts.find(dp => dp.part === store.selectedDrumPart)?.label }}
-          </span>
-          <span v-else>
-            자동 모드: 보표를 클릭하면 위치에 따라 자동으로 드럼 파트가 선택됩니다
-          </span>
-        </p>
-        <!-- Ghost Note 모드 토글 -->
-        <div class="ghost-note-toggle">
-          <button
-            @click="store.toggleGhostNoteMode()"
-            :class="['btn', 'btn-ghost', { active: store.isGhostNoteMode }]"
-            title="Ghost Note 모드 (약하게 연주하는 음표)"
-          >
-            👻 Ghost Note {{ store.isGhostNoteMode ? 'ON' : 'OFF' }}
-          </button>
-        </div>
-
-        <!-- Accent 모드 토글 -->
-        <div class="accent-toggle">
-          <button
-            @click="store.toggleAccentMode()"
-            :class="['btn', 'btn-accent', { active: store.isAccentMode }]"
-            title="Accent 모드 (강하게 연주하는 음표)"
-          >
-            ▶ Accent {{ store.isAccentMode ? 'ON' : 'OFF' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 다이나믹 표시 -->
-      <div class="dynamics-section">
-        <label class="dynamics-label">다이나믹 표시:</label>
-        <div class="dynamics-buttons">
-          <button
-            v-for="dt in dynamicTypes"
-            :key="dt.type"
-            @click="store.setSelectedDynamicType(store.selectedDynamicType === dt.type ? null : dt.type)"
-            :class="['dynamics-btn', { active: store.selectedDynamicType === dt.type }]"
-            :title="dt.label"
-          >
-            {{ dt.type }}
-          </button>
-        </div>
-        <div class="hairpin-buttons">
-          <button
-            v-for="ht in hairpinTypes"
-            :key="ht.type"
-            @click="store.setSelectedHairpinType(store.selectedHairpinType === ht.type ? null : ht.type)"
-            :class="['hairpin-btn', { active: store.selectedHairpinType === ht.type }]"
-            :title="ht.label"
-          >
-            {{ ht.symbol }} {{ ht.type === HairpinType.CRESCENDO ? '크레센도' : '디크레센도' }}
-          </button>
-        </div>
-        <p class="dynamics-hint">
-          <span v-if="store.selectedDynamicType">
-            선택됨: {{ dynamicTypes.find(dt => dt.type === store.selectedDynamicType)?.label }}
-          </span>
-          <span v-else-if="store.selectedHairpinType">
-            선택됨: {{ hairpinTypes.find(ht => ht.type === store.selectedHairpinType)?.label }}
-          </span>
-          <span v-else>
-            다이나믹 또는 헤어핀을 선택한 후 보표를 클릭하세요
-          </span>
-        </p>
-      </div>
-    </div>
-
-    <!-- 툴바 -->
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <button @click="handleNewSheet" class="btn btn-file" title="새 악보">
-          📄 새 악보
-        </button>
-        <button @click="triggerFileInput" class="btn btn-file" title="악보 불러오기">
-          📂 열기
-        </button>
-        <button @click="store.saveToFile()" class="btn btn-file" title="악보 저장">
-          💾 저장
-        </button>
-        <button @click="handlePrint" class="btn btn-file" title="악보 인쇄">
-          🖨️ 인쇄
-        </button>
+    <!-- 악보 제목 (컴팩트) -->
+    <div class="sheet-info">
+      <div class="sheet-title-compact">
         <input
-          ref="fileInput"
-          type="file"
-          accept=".json"
-          @change="handleLoadFile"
-          style="display: none"
+          type="text"
+          :value="store.drumSheet.title"
+          @input="store.setTitle(($event.target as HTMLInputElement).value)"
+          class="title-input-inline"
+          placeholder="곡 제목"
         />
-        <div class="toolbar-divider"></div>
-        <button @click="addMeasureDirectly" class="btn btn-primary">
-          ➕ 마디 추가
-        </button>
-        <button @click="openSectionDialog" class="btn btn-secondary">
-          📑 섹션 추가
-        </button>
+        <input
+          type="text"
+          :value="store.drumSheet.artist || ''"
+          @input="store.setArtist(($event.target as HTMLInputElement).value)"
+          class="artist-input-inline"
+          placeholder="아티스트"
+        />
       </div>
-      <div class="toolbar-right">
-        <button
-          @click="store.undo()"
-          :disabled="!store.canUndo"
-          class="btn btn-undo"
-          title="실행 취소 (Ctrl+Z)"
-        >
-          ↶ 실행 취소
-        </button>
-        <button
-          @click="store.redo()"
-          :disabled="!store.canRedo"
-          class="btn btn-redo"
-          title="다시 실행 (Ctrl+Y)"
-        >
-          ↷ 다시 실행
-        </button>
+      <div class="tempo-compact">
+        <span>♩ =</span>
+        <input
+          type="number"
+          :value="store.drumSheet.tempo"
+          @input="store.setTempo(Number(($event.target as HTMLInputElement).value))"
+          min="40"
+          max="240"
+          class="tempo-input-inline"
+        />
+        <span>BPM</span>
       </div>
     </div>
 
@@ -470,7 +350,7 @@ function toggleMeasureSelection(measureId: string) {
           :section="section"
           :is-first-in-section="isFirstInSection"
           :measure-number="index + 1"
-          :width="200"
+          :width="300"
           @toggle-note="(part, beat) => handleToggleNote(measure.id, part, beat)"
           @toggle-rest="(beat) => handleToggleRest(measure.id, beat)"
           @clear-measure="() => store.clearMeasure(measure.id)"
@@ -582,93 +462,141 @@ function toggleMeasureSelection(measureId: string) {
 
 <style scoped>
 .drum-editor {
-  padding: 20px;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0;
   background: #f9f9f9;
-  height: 100%;
+  min-height: 100vh;
 }
 
-.editor-header {
-  margin-bottom: 20px;
+/* 상단 툴바 - 컴팩트 */
+.top-toolbar {
   background: white;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-bottom: 2px solid #e0e0e0;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
-.title-section {
-  margin-bottom: 20px;
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.editor-header h1 {
-  margin-bottom: 16px;
-  color: #333;
-  font-size: 28px;
+.toolbar-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  margin-right: 4px;
 }
 
-.sheet-title-display {
-  text-align: center;
-  padding: 20px;
-  background: #fafafa;
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: #ddd;
+  margin: 0 6px;
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 13px;
+  min-width: 32px;
+}
+
+.select-sm {
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-}
-
-.editor-title {
-  font-size: 18px;
-  margin: 0;
-  color: #555;
-}
-
-.sheet-title-section {
   background: white;
-  padding: 20px;
-  margin-bottom: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.drum-btn {
+  min-width: 40px;
+}
+
+.dynamic-btn {
+  font-family: 'Georgia', serif;
+  font-style: italic;
+  font-weight: 700;
+}
+
+/* 악보 정보 - 컴팩트 */
+.sheet-info {
+  background: white;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-left: 4px solid #1976d2;
 }
 
-.sheet-title-display {
-  flex: 1;
-}
-
-.main-title {
-  font-size: 32px;
-  font-weight: 900;
-  margin: 0 0 8px 0;
-  color: #222;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.artist-name {
-  font-size: 18px;
-  margin: 0;
-  color: #666;
-  font-style: italic;
-}
-
-.tempo-display-large {
+.sheet-title-compact {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  background: #f5f5f5;
-  padding: 12px 16px;
-  border-radius: 6px;
-  border: 2px solid #1976d2;
+  gap: 12px;
+  align-items: center;
 }
 
-.tempo-label {
+.title-input-inline {
   font-size: 20px;
-  font-weight: bold;
+  font-weight: 700;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 4px 8px;
+  background: transparent;
+  transition: all 0.2s;
+  min-width: 200px;
+}
+
+.title-input-inline:hover,
+.title-input-inline:focus {
+  border-bottom-color: #1976d2;
+  outline: none;
+  background: #f5f5f5;
+}
+
+.artist-input-inline {
+  font-size: 14px;
+  font-style: italic;
+  color: #666;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 4px 8px;
+  background: transparent;
+  transition: all 0.2s;
+  min-width: 150px;
+}
+
+.artist-input-inline:hover,
+.artist-input-inline:focus {
+  border-bottom-color: #1976d2;
+  outline: none;
+  background: #f5f5f5;
+}
+
+.tempo-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
   color: #1976d2;
 }
 
-.tempo-value {
-  font-size: 32px;
-  font-weight: 900;
+.tempo-input-inline {
+  width: 60px;
+  font-size: 16px;
+  font-weight: 700;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  text-align: center;
   color: #1976d2;
 }
 
@@ -991,17 +919,15 @@ function toggleMeasureSelection(measureId: string) {
 }
 
 .sheet-container {
-  background: white;
-  padding: 32px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 24px;
+  background: #fafafa;
+  padding: 20px;
+  min-height: calc(100vh - 200px);
 }
 
 .measures-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 16px;
   align-items: start;
 }
 
